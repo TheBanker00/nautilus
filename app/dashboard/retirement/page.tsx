@@ -537,7 +537,7 @@ export default function RetirementPage() {
 
       {/* ── RETIREMENT PROFILE SETUP ── */}
       <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '22px 26px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--t-text-primary)' }}>Your Retirement Profile</div>
           <button
@@ -732,7 +732,7 @@ export default function RetirementPage() {
         .you-are-here-pulse { animation: pulse-ring 2s ease-out infinite; }
       `}</style>
       <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-md)', padding: '24px 28px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
 
         {/* ── Chart header row 1: title + post-retirement strategy ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
@@ -945,7 +945,7 @@ export default function RetirementPage() {
 
           {/* RETIREMENT INCOME ANALYSIS */}
           <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '24px 26px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
             <SectionHeader title="Retirement Income Analysis" sub="How your monthly income stacks up against your retirement expenses." />
 
             {/* Readiness gauge + breakdown */}
@@ -1021,7 +1021,7 @@ export default function RetirementPage() {
 
           {/* WHAT-IF SIMULATOR */}
           <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '24px 26px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
             <SectionHeader title="What-If Simulator" sub="Adjust inputs to see how decisions change your retirement nest egg. Updates the purple line on the chart." />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 40px' }}>
               <div>
@@ -1066,7 +1066,7 @@ export default function RetirementPage() {
 
           {/* GROWTH RATE ASSUMPTIONS */}
           <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '22px 24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
             <SectionHeader title="Growth Rate Assumptions" sub={`Rates for ${riskKey} strategy`} />
             <AssetRateTable riskKey={riskKey} assets={assetSnap} />
             <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--t-bg)', borderRadius: T.radiusMd, fontSize: 11, color: 'var(--t-text-tertiary)', lineHeight: 1.5 }}>
@@ -1076,7 +1076,7 @@ export default function RetirementPage() {
 
           {/* STRATEGY OUTCOMES AT RETIREMENT */}
           <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '22px 24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
             <SectionHeader title={isRetired ? 'Current Portfolio Value' : `At Retirement (Age ${retirementAge})`} sub="By investment strategy" />
             {RISK_KEYS.map((k, i) => {
               const val  = retBalance[k] ?? 0;
@@ -1114,7 +1114,7 @@ export default function RetirementPage() {
 
           {/* MILESTONES */}
           <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '22px 24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
             <SectionHeader title="Milestones" sub="Base scenario." />
             {milestones.map((m, i) => (
               <div key={m.label} style={{ marginBottom: i < milestones.length - 1 ? 18 : 0 }}>
@@ -1144,7 +1144,7 @@ export default function RetirementPage() {
 
           {/* AI INSIGHTS */}
           <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', padding: '22px 24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: T.isDark ? 'linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent)' : 'linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--t-card-accent-line)' }} />
             <SectionHeader title="Nautilus Insights" />
             {insights.map((insight, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: T.radiusMd, background: 'var(--t-primary-bg)', border: `1px solid var(--t-primary-border)`, marginBottom: i < insights.length - 1 ? 8 : 0 }}>

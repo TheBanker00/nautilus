@@ -2,14 +2,14 @@
 
 export type KeywordRule = {
   keywords: string[];
-  tags: string[];
+  tags?: string[];
   category?: string;
   subcategory?: string;
 };
 
 // keywordtaxonomy.ts
 
-export const KEYWORD_TAXONOMY = [
+export const KEYWORD_TAXONOMY: KeywordRule[] = [
 
   /* ---------------------------------
      INCOME

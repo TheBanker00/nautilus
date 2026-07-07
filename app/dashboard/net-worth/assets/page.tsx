@@ -390,7 +390,7 @@ export default function AssetsPage() {
           {/* bottom accent bar */}
           <div style={{
             height: 2,
-            background: T.isDark
+            background: isDark
               ? `linear-gradient(90deg, transparent, #2ED3C6, #67E6D5, #2ED3C6, transparent)`
               : `linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent)`,
           }} />
@@ -424,8 +424,8 @@ export default function AssetsPage() {
               { label: 'Peak Assets',    value: fmtK(peakAssets),                                      sub: 'highest in this period',                                           color: isDark ? '#2ED3C6' : '#0a3fa8' },
             ].map(s => (
               <div key={s.label} style={{
-                background: T.isDark ? 'rgba(103,230,213,0.07)' : 'rgba(0,0,0,0.03)',
-                border: T.isDark ? '1px solid rgba(103,230,213,0.2)' : `1px solid var(--t-border)`,
+                background: isDark ? 'rgba(103,230,213,0.07)' : 'rgba(0,0,0,0.03)',
+                border: isDark ? '1px solid rgba(103,230,213,0.2)' : `1px solid var(--t-border)`,
                 borderRadius: 10,
                 padding: '10px 14px',
               }}>

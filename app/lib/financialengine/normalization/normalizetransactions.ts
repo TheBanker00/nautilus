@@ -4,6 +4,9 @@ from '../../types/ingestiontransaction';
 import { Transaction }
 from '../../types/transactions';
 
+import { ExpenseCategory, IncomeCategory, TransferCategory } from '../../types/categories';
+import { ExpenseSubcategory, IncomeSubcategory, TransferSubcategory } from '../../types/subcategories';
+
 import { IMPORT_TAXONOMY }
 from '../taxonomy/importtaxonomy';
 
@@ -242,9 +245,9 @@ export function normalizeTransaction(
     normalizedMerchant:
       merchantMatch?.canonicalName,
 
-    category,
+    category: category as ExpenseCategory | IncomeCategory | TransferCategory,
 
-    subcategory,
+    subcategory: subcategory as ExpenseSubcategory | IncomeSubcategory | TransferSubcategory,
 
     accountId:
       transaction.accountId,
