@@ -1,26 +1,147 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+
+/* ── Base resets ── */
+*, *::before, *::after { box-sizing: border-box; }
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─────────────────────────────────────────────────────────────
+   TAILWIND v4 THEME
+   All custom tokens, colors, shadows, fonts, keyframes, and
+   animations must live here — tailwind.config.ts is ignored
+   for these in v4.
+───────────────────────────────────────────────────────────── */
+
+/* Custom keyframes */
+@keyframes float1 {
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  50%      { transform: translateY(-10px) rotate(1deg); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translateY(0px) rotate(1deg); }
+  50%      { transform: translateY(-8px) rotate(-1deg); }
+}
+@keyframes float3 {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme inline {
+  /* Fonts */
+  --font-sans:    var(--font-geist-sans);
+  --font-mono:    var(--font-geist-mono);
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+
+  /* Brand colors */
+  --color-background:  var(--background);
+  --color-foreground:  var(--foreground);
+  --color-royal:       #0B2D89;
+  --color-royal-light: #1A4FCC;
+  --color-gold:        #2ED3C6;
+  --color-gold-light:  #67E6D5;
+  --color-accent:      #4DA3FF;
+  --color-bg:          #07111F;
+  --color-bg2:         #0D1C30;
+  --color-bg3:         #122040;
+  --color-muted:       #7A90B8;
+  --color-text:        #C8D8EC;
+  --color-glass-border: rgba(77,163,255,0.18);
+
+  /* Border radius */
+  --radius-card: 18px;
+
+  /* Box shadows */
+  --shadow-gold-glow:    0 0 20px rgba(46,211,198,0.3);
+  --shadow-gold-glow-lg: 0 8px 32px rgba(46,211,198,0.4);
+  --shadow-phone:        0 40px 80px rgba(0,0,0,0.6);
+  --shadow-glass:        0 8px 32px rgba(0,0,0,0.4);
+
+  /* Animations */
+  --animate-float1:      float1 5s ease-in-out infinite;
+  --animate-float2:      float2 6s ease-in-out infinite;
+  --animate-float3:      float3 5.5s ease-in-out infinite;
+  --animate-float1-slow: float1 7s ease-in-out infinite;
+  --animate-float2-fast: float2 4.5s ease-in-out infinite;
+  --animate-dot-pulse:   dot-pulse 2s infinite;
+  --animate-spin:        spin 0.8s linear infinite;
+  --animate-fade-up:     fade-up 0.6s ease both;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  font-family: var(--t-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Tool workspace base ── */
+.tool-workspace {
+  background: var(--t-bg);
+  color: var(--t-text-primary);
+  min-height: 100vh;
+}
+
+/* ── Scrollbar — light (landing pages, dark backgrounds) ── */
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.40); border-radius: 4px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.65); border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-button { background: rgba(255,255,255,0.12); display: block; height: 16px; width: 14px; }
+::-webkit-scrollbar-button:hover { background: rgba(255,255,255,0.24); }
+::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='16' viewBox='0 0 14 16'%3E%3Cpath d='M7 5L3.5 10h7z' fill='rgba(255,255,255,0.75)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center;
+}
+::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='16' viewBox='0 0 14 16'%3E%3Cpath d='M7 11L3.5 6h7z' fill='rgba(255,255,255,0.75)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center;
+}
+
+/* ── Scrollbar — dashboard (same style, grey on light bg) ── */
+.dashboard-scroll::-webkit-scrollbar { width: 14px; height: 14px; }
+.dashboard-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.06); }
+.dashboard-scroll::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.45); border-radius: 4px; border: 3px solid transparent; background-clip: padding-box; }
+.dashboard-scroll::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.70); border: 3px solid transparent; background-clip: padding-box; }
+.dashboard-scroll::-webkit-scrollbar-button { background: rgba(0,0,0,0.07); display: block; height: 16px; width: 14px; }
+.dashboard-scroll::-webkit-scrollbar-button:hover { background: rgba(0,0,0,0.14); }
+.dashboard-scroll::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='16' viewBox='0 0 14 16'%3E%3Cpath d='M7 5L3.5 10h7z' fill='rgba(71,85,105,0.70)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center;
+}
+.dashboard-scroll::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='16' viewBox='0 0 14 16'%3E%3Cpath d='M7 11L3.5 6h7z' fill='rgba(71,85,105,0.70)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center;
+}
+
+/* ── Landing page utilities ── */
+.glass {
+  background: rgba(13, 26, 48, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(77, 163, 255, 0.18);
+}
+
+.hero-grid-overlay {
+  background-image:
+    linear-gradient(rgba(77,163,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,163,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
 }

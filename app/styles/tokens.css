@@ -1,0 +1,319 @@
+/*
+ * ============================================================
+ *  WealthLens Design Tokens
+ *  Two distinct experiences — one token file governs both.
+ *
+ *  BRAND tokens  → landing pages, sign-in, marketing
+ *  TOOL tokens   → dashboard, all app routes after login
+ *
+ *  Usage:
+ *    Brand:  var(--brand-*)
+ *    Tool:   var(--t-*)
+ * ============================================================
+ */
+
+:root {
+
+  /* ── BRAND TOKENS (public-facing) ────────────────────────
+   *  Deep blue + teal. Premium, trust-building, established.
+   *  Used on: landing, sign-in, onboarding, marketing pages.
+   * ─────────────────────────────────────────────────────── */
+
+  --brand-navy:         #07111F;
+  --brand-navy-mid:     #0D1C30;
+  --brand-navy-light:   #122040;
+  --brand-royal:        #0B2D89;
+  --brand-royal-light:  #1A4FCC;
+
+  /* Electric blue — the brand's signature interactive color (landing/marketing only) */
+  --brand-electric:     #4DA3FF;
+  --brand-electric-glow: rgba(77,163,255,0.25);
+
+  /* Teal — brand accent ONLY. Do not use in the tool. */
+  --brand-gold:         #2ED3C6;
+  --brand-gold-light:   #67E6D5;
+  --brand-gold-glow:    rgba(46,211,198,0.3);
+
+  --brand-text:         #C8D8EC;
+  --brand-muted:        #7A90B8;
+  --brand-border:       rgba(77,163,255,0.18);
+
+
+  /* ── TOOL TOKENS (authenticated app) ────────────────────
+   *  Light workspace. Clarity-first. Semantic colors only.
+   *  Used on: all /dashboard/* routes.
+   * ─────────────────────────────────────────────────────── */
+
+  /* Workspace surfaces */
+  --t-bg:               #F4F6FA;   /* page background */
+  --t-surface:          #FFFFFF;   /* card surface */
+  --t-card-header-bg:   #FAFBFD;   /* card header band */
+  --t-surface-raised:   #FFFFFF;   /* elevated surface (dropdown, modal) */
+  --t-border:           rgba(0,0,0,0.07);
+  --t-border-med:       rgba(0,0,0,0.12);
+  --t-shadow-sm:        0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --t-shadow-md:        0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+
+  /* Text scale */
+  --t-text-primary:     #0F172A;
+  --t-text-secondary:   #475569;
+  --t-text-tertiary:    #94A3B8;
+  --t-text-disabled:    #CBD5E1;
+
+  /* Primary interactive — deep royal blue, tool workspace accent */
+  --t-inner-box-bg:       rgba(77,163,255,0.07);
+  --t-inner-box-border:   rgba(77,163,255,0.20);
+  --t-inner-box-heading:  #0a3fa8;
+  --t-inner-box-text:     #0F172A;
+  --t-inner-box-subtext:  #64748B;
+  --t-card-accent:      #0a3fa8;
+  --t-card-accent-line: linear-gradient(90deg, transparent, #0a3fa8, #4da3ff, #0a3fa8, transparent);
+  --t-primary:          #0a3fa8;
+  --t-primary-hover:    #0d4cbf;
+  --t-primary-active:   #0935a0;
+  --t-primary-bg:       rgba(10,63,168,0.08);
+  --t-primary-bg-hover: rgba(10,63,168,0.13);
+  --t-primary-border:   rgba(10,63,168,0.28);
+
+  /* ── Semantic colors — intentional, never decorative ── */
+
+  /* Green = positive / money in / healthy */
+  --t-green:            #16A34A;
+  --t-green-light:      #22C55E;
+  --t-green-bg:         #F0FDF4;
+  --t-green-border:     #BBF7D0;
+  --t-green-text:       #15803D;
+
+  /* Red = negative / overspend / danger / alert high */
+  --t-red:              #DC2626;
+  --t-red-light:        #EF4444;
+  --t-red-bg:           #FEF2F2;
+  --t-red-border:       #FECACA;
+  --t-red-text:         #B91C1C;
+
+  /* Amber = attention needed / trial / medium alert / heavy month */
+  --t-amber:            #D97706;
+  --t-amber-light:      #F59E0B;
+  --t-amber-bg:         #FFFBEB;
+  --t-amber-border:     #FDE68A;
+  --t-amber-text:       #B45309;
+
+  /* Teal = neutral insight / bills / informational */
+  --t-teal:             #0891B2;
+  --t-teal-light:       #06B6D4;
+  --t-teal-bg:          #ECFEFF;
+  --t-teal-border:      #A5F3FC;
+  --t-teal-text:        #0E7490;
+
+  /* Purple = planning / goals / opportunity / savings potential */
+  --t-purple:           #7C3AED;
+  --t-purple-light:     #8B5CF6;
+  --t-purple-bg:        #F5F3FF;
+  --t-purple-border:    #DDD6FE;
+  --t-purple-text:      #6D28D9;
+
+  /* ── Navigation sidebar ──────────────────────────────── */
+  /* Deep navy — brand DNA carries into the nav shell only */
+  --t-nav-bg:           #0F2044;
+  --t-nav-border:       rgba(255,255,255,0.07);
+  --t-nav-text:         rgba(255,255,255,0.60);
+  --t-nav-text-hover:   rgba(255,255,255,0.88);
+  --t-nav-text-active:  #FFFFFF;
+  --t-nav-section:      rgba(255,255,255,0.28);
+  --t-nav-hover-bg:     rgba(255,255,255,0.05);
+  /* Active state — electric blue on dark nav, matches sign-in button */
+  --t-nav-active-bg:    rgba(77,163,255,0.14);
+  --t-nav-active-border: #4DA3FF;
+  --t-nav-muted:        rgba(255,255,255,0.40);
+
+  /* ── Typography ──────────────────────────────────────── */
+  --t-font-display:     var(--font-playfair), Georgia, serif;
+  --t-font-body:        var(--font-inter), system-ui, -apple-system, sans-serif;
+
+  /* ── Spacing & radius ────────────────────────────────── */
+  --t-radius-sm:        6px;
+  --t-radius-md:        8px;
+  --t-radius-lg:        10px;
+  --t-radius-xl:        12px;
+  --t-radius-2xl:       16px;
+
+  /* ── Z-index scale ───────────────────────────────────── */
+  --t-z-sidebar:        1000;
+  --t-z-overlay:        1100;
+  --t-z-modal:          1200;
+  --t-z-toast:          1300;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DARK MODE OVERRIDES
+   Applied when DashboardThemeProvider sets data-theme="dark"
+   on <html>. Flips all --t-* surface, text, and border tokens.
+───────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Surfaces */
+  --t-bg:               #07111F;
+  --t-surface:          linear-gradient(180deg, #0D1C30 0%, #0B1A2D 90%, rgba(46,211,198,0.04) 100%);
+  --t-surface-raised:   #0D1C30;
+  --t-card-header-bg:   rgba(46,211,198,0.06);  /* teal-tinted card header band */
+  --t-border:           rgba(46,211,198,0.22);
+  --t-border-med:       rgba(46,211,198,0.35);
+  --t-shadow-sm:        0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(46,211,198,0.07);
+  --t-shadow-md:        0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(46,211,198,0.07);
+
+  /* Text */
+  --t-text-primary:     #F0F4FF;
+  --t-text-secondary:   #C8D8EC;
+  --t-text-tertiary:    #7A90B8;
+  --t-text-disabled:    #4A6080;
+
+  /* Primary interactive */
+  --t-inner-box-bg:       rgba(46,211,198,0.07);
+  --t-inner-box-border:   rgba(46,211,198,0.20);
+  --t-inner-box-heading:  var(--t-card-accent);
+  --t-inner-box-text:     #F0F4FF;
+  --t-inner-box-subtext:  #7A90B8;
+  --t-card-accent:      #2ED3C6;
+  --t-card-accent-line: linear-gradient(90deg, transparent, #2ED3C6, #0891B2, #2ED3C6, transparent);
+  --t-primary:          #2ED3C6;
+  --t-primary-hover:    #3FDED2;
+  --t-primary-active:   #25BDB1;
+  --t-primary-bg:       rgba(46,211,198,0.12);
+  --t-primary-bg-hover: rgba(77,163,255,0.20);
+  --t-primary-border:   rgba(77,163,255,0.35);
+
+  /* Semantic — shifted for dark legibility */
+  --t-green:            #4ADE80;
+  --t-green-light:      #86EFAC;
+  --t-green-bg:         rgba(74,222,128,0.10);
+  --t-green-border:     rgba(74,222,128,0.25);
+  --t-green-text:       #4ADE80;
+
+  --t-red:              #F87171;
+  --t-red-light:        #FCA5A5;
+  --t-red-bg:           rgba(248,113,113,0.10);
+  --t-red-border:       rgba(248,113,113,0.25);
+  --t-red-text:         #F87171;
+
+  --t-amber:            #FBBF24;
+  --t-amber-light:      #FCD34D;
+  --t-amber-bg:         rgba(251,191,36,0.10);
+  --t-amber-border:     rgba(251,191,36,0.25);
+  --t-amber-text:       #FBBF24;
+
+  --t-teal:             #2ED3C6;
+  --t-teal-light:       #67E6D5;
+  --t-teal-bg:          rgba(46,211,198,0.10);
+  --t-teal-border:      rgba(46,211,198,0.25);
+  --t-teal-text:        #2ED3C6;
+
+  --t-purple:           #A78BFA;
+  --t-purple-light:     #C4B5FD;
+  --t-purple-bg:        rgba(167,139,250,0.10);
+  --t-purple-border:    rgba(167,139,250,0.25);
+  --t-purple-text:      #A78BFA;
+}
+
+/*
+ * ── Utility classes the tool can use directly ────────────
+ *  These keep inline styles minimal for common patterns.
+ */
+
+.t-card {
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius-xl);
+  box-shadow: var(--t-shadow-sm);
+}
+
+.t-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+  line-height: 1.6;
+}
+
+.t-badge-blue   { background: var(--t-primary-bg);  color: var(--t-primary); }
+.t-badge-green  { background: var(--t-green-bg);     color: var(--t-green-text); }
+.t-badge-red    { background: var(--t-red-bg);       color: var(--t-red-text); }
+.t-badge-amber  { background: var(--t-amber-bg);     color: var(--t-amber-text); }
+.t-badge-teal   { background: var(--t-teal-bg);      color: var(--t-teal-text); }
+.t-badge-purple { background: var(--t-purple-bg);    color: var(--t-purple-text); }
+
+/* Primary button — electric blue, same DNA as sign-in */
+.t-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--t-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--t-radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 3px rgba(10,63,168,0.3);
+}
+.t-btn-primary:hover {
+  background: var(--t-primary-hover);
+  box-shadow: 0 2px 8px rgba(10,63,168,0.35);
+}
+.t-btn-primary:active { background: var(--t-primary-active); }
+
+/* Secondary button — ghost with border */
+.t-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 15px;
+  background: var(--t-surface);
+  color: var(--t-text-secondary);
+  border: 1px solid var(--t-border-med);
+  border-radius: var(--t-radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.t-btn-secondary:hover {
+  border-color: var(--t-primary-border);
+  color: var(--t-primary);
+  background: var(--t-primary-bg);
+}
+
+/* Tab bar */
+.t-tab-bar {
+  display: flex;
+  gap: 2px;
+  background: var(--t-bg);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius-md);
+  padding: 3px;
+}
+.t-tab {
+  padding: 5px 14px;
+  border-radius: var(--t-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t-text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+}
+.t-tab:hover { color: var(--t-text-secondary); background: var(--t-surface); }
+.t-tab.active {
+  background: var(--t-surface);
+  color: var(--t-primary);
+  font-weight: 600;
+  box-shadow: var(--t-shadow-sm);
+}
+
+/* Divider */
+.t-divider { height: 1px; background: var(--t-border); }
