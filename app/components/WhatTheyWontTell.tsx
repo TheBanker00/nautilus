@@ -93,7 +93,7 @@ export default function WhatTheyWontTell() {
               {t.bank}
             </div>
 
-            {/* What WealthLens shows */}
+            {/* What Nautilus shows */}
             <div
               className="rounded-xl p-4 text-[0.88rem] leading-[1.65] flex-1"
               style={{ background: `${t.color}08`, border: `1px solid ${t.color}20`, color: '#C8D8EC' }}

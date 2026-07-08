@@ -109,7 +109,7 @@ export default function Hero() {
 
       {/* RIGHT */}
       <div className="relative z-10 flex items-center justify-center min-h-[600px]">
-        <div className="relative" style={{ width: 1060, height: 650 }}>
+        <div className="relative" style={{ width: 'min(1060px, 63vw)', height: 650 }}>
 
           {/* Glow behind everything */}
           <div
@@ -131,12 +131,12 @@ export default function Hero() {
             className="absolute"
             style={{
               top: '50%',
-              left: -212,
+              left: '-20%',
               transform: 'translateY(-50%)',
               zIndex: 5,
               borderRadius: 12,
               boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(46,211,198,0.15)',
-              width: 1045,
+              width: '98%',
               lineHeight: 0,
             }}
           >
@@ -155,10 +155,10 @@ export default function Hero() {
             className="absolute"
             style={{
               top: '50%',
-              right: -80,
+              right: 0,
               transform: 'translateY(-48%)',
               zIndex: 10,
-              width: 260,
+              width: 'min(260px, 13vw)',
               height: 580,
             }}
           >

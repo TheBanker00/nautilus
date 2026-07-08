@@ -18,7 +18,7 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['what is nautilus', 'what does nautilus do', 'how does it work', 'tell me about', 'explain'],
     response: {
       text: "Nautilus is your personal financial command center. It connects all your accounts in one place — bank, investments, retirement, real estate — and gives you a live Nautilus Score, cash flow analysis, AI-powered insights, and net worth tracking. Think of it as the financial dashboard your bank should have built.",
-      chips: ['Is it free?', 'Is my data safe?', 'What accounts are supported?'],
+      chips: ['Pricing', 'Is my data safe?', 'What accounts are supported?'],
       cta: { label: 'See how it works →', href: '/landingpage/features' },
     },
   },
@@ -49,14 +49,14 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['cancel', 'cancellation', 'refund', 'stop subscription', 'unsubscribe', 'end my plan', 'cancel anytime'],
     response: {
       text: "Yes — you can cancel at any time. Your access stays active through the end of your current billing period and you won't be charged again after that. For example, if your plan renews on the 1st and you cancel on the 15th, you keep access through the end of the month. Annual plans work the same way.",
-      chips: ['Is it free?', 'How do I sign up?', 'What is Nautilus?'],
+      chips: ['Pricing', 'How do I sign up?', 'What is Nautilus?'],
     },
   },
   {
     keywords: ['sign up', 'get started', 'join', 'create account', 'register', 'start'],
     response: {
       text: "Getting started takes about 2 minutes. Enter your email, set a password, and connect your first account. We'll generate your Nautilus Score the moment your data loads.",
-      chips: ['Is it free?', 'Is my data safe?', 'What accounts are supported?'],
+      chips: ['Pricing', 'Is my data safe?', 'What accounts are supported?'],
       cta: { label: 'Create my account →', href: '/landingpage/signup' },
     },
   },
@@ -64,7 +64,7 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['safe', 'security', 'secure', 'privacy', 'data', 'plaid', 'encrypt', 'hack', 'trust', 'protect'],
     response: {
       text: "Security is our highest priority. Account connections use Plaid — the same bank-grade infrastructure used by Venmo, Cash App, and Coinbase. We never see or store your banking credentials. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). We don't sell your data — ever.",
-      chips: ['What is Plaid?', 'What accounts are supported?', 'Is it free?'],
+      chips: ['What is Plaid?', 'What accounts are supported?', 'Pricing'],
       cta: { label: 'Read our security page →', href: '/landingpage/security' },
     },
   },
@@ -87,7 +87,7 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['accounts', 'banks', 'supported', 'connect', 'which banks', 'fidelity', 'chase', 'bofa', 'vanguard', 'schwab', 'wells fargo', 'credit union', 'brokerage', 'investment', '401k', 'retirement'],
     response: {
       text: "Nautilus connects to over 12,000 financial institutions via Plaid — including Chase, Bank of America, Wells Fargo, Fidelity, Vanguard, Schwab, and most credit unions. We support checking, savings, credit cards, investment accounts, 401(k)s, and IRAs. You can also manually add real estate and other assets.",
-      chips: ['How do I connect an account?', 'Is my data safe?', 'Is it free?'],
+      chips: ['How do I connect an account?', 'Is my data safe?', 'Pricing'],
       cta: { label: 'Get started →', href: '/landingpage/signup' },
     },
   },
@@ -103,7 +103,7 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['mint', 'ynab', 'personal capital', 'choose', 'select', 'company', 'pick', 'separate', 'empower', 'copilot', 'monarch', 'rocket money', 'different', 'better', 'compare', 'vs', 'versus', 'alternative'],
     response: {
       text: "Most apps answer one question: \"Where did my money go?\" Nautilus answers a much broader set — how healthy is my financial position? Am I building wealth efficiently? Is my debt helping or hurting me? Am I on track for retirement? What should I focus on next? It's built for people who want to build financial independence, not just track spending.",
-      chips: ['What is the Nautilus Score?', 'Is it free?', 'What accounts are supported?'],
+      chips: ['What is the Nautilus Score?', 'Pricing', 'What accounts are supported?'],
       cta: { label: 'See all features →', href: '/landingpage/features' },
     },
   },
@@ -111,7 +111,7 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['nautilus score', 'score', 'grade', 'rating', 'health score', 'financial health'],
     response: {
       text: "The Nautilus Score is a 0–100 financial health grade across 8 components: cash flow, emergency fund, debt-to-income, savings rate, net worth trajectory, investment diversification, retirement pace, and debt-to-asset ratio. Each is age-adjusted — so a 28-year-old and a 58-year-old are measured against the right benchmarks for their life stage.",
-      chips: ['How is my score calculated?', 'Is it free?', 'What is Nautilus?'],
+      chips: ['How is my score calculated?', 'Pricing', 'What is Nautilus?'],
       cta: { label: 'See how it works →', href: '/landingpage/features' },
     },
   },
@@ -119,14 +119,42 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
     keywords: ['ai insights', 'insights', 'analysis', 'recommendations', 'alerts', 'warnings'],
     response: {
       text: "The AI Insights page runs a rules engine across your transactions, income, subscriptions, and net worth — flagging issues like high debt-to-asset ratios, income volatility, subscription overlap, and budget overruns. It also highlights wins. When we add Claude AI, the same engine feeds it context for deeper, conversational analysis.",
-      chips: ['What is the Nautilus Score?', 'What accounts are supported?', 'Is it free?'],
+      chips: ['What is the Nautilus Score?', 'What accounts are supported?', 'Pricing'],
     },
   },
   {
     keywords: ['contact', 'support', 'help', 'question', 'human', 'person', 'talk', 'email', 'reach'],
     response: {
       text: "For support during our beta, you can reach us directly at support@nautilusmoney.com. We're a small team and respond quickly — usually within a few hours on weekdays.",
-      chips: ['Is it free?', 'How do I sign up?', 'What is Nautilus?'],
+      chips: ['Pricing', 'How do I sign up?', 'What is Nautilus?'],
+    },
+  },
+  {
+    keywords: ['billing', 'billed', 'charge', 'invoice', 'monthly', 'annual', 'yearly', 'subscription billing'],
+    response: {
+      text: "Billing is processed securely through Stripe, one of the most trusted payment platforms used by thousands of SaaS products. Monthly subscribers are billed each month on their renewal date. Annual subscribers are billed once per year and save compared to the monthly rate.",
+      chips: ['What payment methods do you accept?', 'Can I cancel anytime?', 'Pricing'],
+    },
+  },
+  {
+    keywords: ['payment', 'pay', 'credit card', 'apple pay', 'venmo', 'how do i pay', 'payment method'],
+    response: {
+      text: "We currently accept all major credit and debit cards through Stripe. Apple Pay is coming soon, and Venmo support is planned for a future update.",
+      chips: ['How does billing work?', 'Can I cancel anytime?', 'Pricing'],
+    },
+  },
+  {
+    keywords: ['mobile app', 'app', 'iphone', 'android', 'ios', 'google play', 'app store', 'phone'],
+    response: {
+      text: "A Nautilus Money mobile app is in the works for both the Apple App Store and Google Play Store. We'll announce when it's available — stay tuned!",
+      chips: ['What is Nautilus?', 'How do I sign up?', 'Is my data safe?'],
+    },
+  },
+  {
+    keywords: ['locked', 'blocked', 'forgot', 'reset password', 'can\'t log in', 'lost access', 'account access', 'forgot password'],
+    response: {
+      text: "If you can't access your account, click the \"Forgot your password?\" link on the sign-in page to reset it via email. If you're still having trouble, reach out to our support team and we'll get you back in.",
+      chips: ['How do I contact support?', 'How do I sign up?'],
     },
   },
   {
@@ -141,12 +169,12 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
 
 const FALLBACK: BotResponse = {
   text: "I'm not sure about that one — but here are the things I can help with:",
-  chips: ['What is Nautilus?', 'Is it free?', 'Is my data safe?', 'What accounts are supported?'],
+  chips: ['What is Nautilus?', 'Pricing', 'Is my data safe?', 'What accounts are supported?'],
 };
 
 const GREETING: BotResponse = {
   text: "Hi there 👋 I'm Navi, Nautilus's assistant. What can I help you with today?",
-  chips: ['What is Nautilus?', 'Is it free?', 'Is my data safe?', 'How do I sign up?'],
+  chips: ['What is Nautilus?', 'Pricing', 'Is my data safe?', 'How do I sign up?'],
 };
 
 function matchResponse(input: string): BotResponse {

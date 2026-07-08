@@ -6,7 +6,7 @@ const items = [
   {
     icon: "🏦",
     name: "Plaid-Powered Connection",
-    desc: "Your bank credentials go directly to your bank via Plaid's OAuth flow — WealthLens never sees them.",
+    desc: "Your bank credentials go directly to your bank via Plaid's OAuth flow — Nautilus Money never sees them.",
   },
   {
     icon: "🚫",
@@ -16,7 +16,7 @@ const items = [
   {
     icon: "🏛️",
     name: "Read-Only, Always",
-    desc: "WealthLens can never move your money. Payment initiation is architecturally disabled on every connection.",
+    desc: "Nautilus can never move your money. Payment initiation is architecturally disabled on every connection.",
   },
   {
     icon: "🔒",

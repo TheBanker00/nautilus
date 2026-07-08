@@ -22,7 +22,7 @@ export default function CtaSection() {
         <span className="text-gold">free.</span>
       </h2>
       <p className="relative z-10 text-[1.1rem] max-w-[500px] mx-auto leading-[1.75] mb-3" style={{ color: '#7A90B8' }}>
-        But understanding your finances is how you start getting there. WealthLens gives you the visibility, the score, and the roadmap — the same intelligence large organizations use to make better decisions, built for your financial life.
+        But understanding your finances is how you start getting there. Nautilus gives you the visibility, the score, and the roadmap — the same intelligence large organizations use to make better decisions, built for your financial life.
       </p>
       <p className="relative z-10 text-[0.92rem] mb-10" style={{ color: '#2ED3C6' }}>
         Launch pricing locked in for the first 100,000 subscribers.

@@ -470,7 +470,7 @@ export default function DashboardPage() {
         <div style={{ background: 'var(--t-surface)', borderRadius: T.radius, border: `1px solid var(--t-border)`, boxShadow: 'var(--t-shadow-sm)', position: 'relative', overflow: 'hidden' }}>
           {ACCENT_LINE}
           <NoDataEmptyState
-            title="Welcome to WealthLens"
+            title="Welcome to Nautilus"
             subtitle="Connect a bank account to see your full financial picture, or add your assets and liabilities manually to get started."
             onPlaidSuccess={() => { refetchWealth(); refreshFlow(); }}
           />

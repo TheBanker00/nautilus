@@ -15,8 +15,42 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title:       "WealthLens — Financial Command Center",
-  description: "The financial command center for high earners. Track net worth, cash flow, recurring, and more in one place.",
+  title:       "Nautilus Money | Your AI Financial Command Center",
+  description: "Nautilus Money is an AI-powered Personal Financial Command Center that helps you track spending, investments, debt, cash flow, and financial health with personalized AI insights.",
+  metadataBase: new URL('https://www.nautilusmoney.com'),
+  openGraph: {
+    type:        'website',
+    url:         'https://www.nautilusmoney.com',
+    siteName:    'Nautilus Money',
+    title:       'Nautilus Money | Your AI Financial Command Center',
+    description: 'Track spending, investments, debt, and cash flow in one place. Nautilus Money gives you AI-powered insights to help you build wealth.',
+    images: [
+      {
+        url:    '/og-image.png',
+        width:  1200,
+        height: 630,
+        alt:    'Nautilus Money — AI Financial Command Center',
+      },
+    ],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'Nautilus Money | Your AI Financial Command Center',
+    description: 'Track spending, investments, debt, and cash flow in one place. AI-powered insights to help you build wealth.',
+    images:      ['/og-image.png'],
+  },
+  keywords: [
+    'personal finance app',
+    'AI financial advisor',
+    'budget tracker',
+    'net worth tracker',
+    'expense tracking',
+    'investment tracker',
+    'financial dashboard',
+    'money management app',
+    'cash flow tracker',
+    'debt payoff planner',
+  ],
 };
 
 export default function RootLayout({
