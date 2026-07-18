@@ -34,8 +34,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Trigger initial sync immediately after linking
-    const syncRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/sync`, {
+    // Trigger initial sync immediately after linking.
+    // Build an absolute base URL from the incoming request so this works on
+    // localhost, Vercel production, and preview deployments without needing an
+    // env var. Falls back to NEXT_PUBLIC_APP_URL if set.
+    const host  = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? '';
+    const proto = req.headers.get('x-forwarded-proto')
+      ?? (host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https');
+    const baseUrl = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_APP_URL ?? '');
+
+    const syncRes = await fetch(`${baseUrl}/api/plaid/sync`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', Cookie: req.headers.get('cookie') ?? '' },
       body:    JSON.stringify({ item_id }),
