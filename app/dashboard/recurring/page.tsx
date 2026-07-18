@@ -837,6 +837,311 @@ function AlertsPanel({ patterns, transactions }: {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   MOBILE VIEW — shared mobile design system
+───────────────────────────────────────────────────────────── */
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+function MobileRecurringRow({ pattern, dimmed, isLast }: { pattern: RecurringClassification; dimmed?: boolean; isLast?: boolean }) {
+  const isIncome = pattern.transaction_type === 'Income';
+  const tag = tagFor(pattern);
+  const tagColor = tag.variant === 'green' ? MN.green : tag.variant === 'red' ? MN.red : tag.variant === 'amber' ? MN.amber : MN.gold;
+  const logo = pattern.transactions[0]?.logo;
+  const initial = (pattern.merchant || '?')[0].toUpperCase();
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '12px 14px',
+      borderBottom: isLast ? 'none' : `1px solid ${MN.border}`,
+      opacity: dimmed ? 0.45 : 1,
+      minHeight: 44,
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+        background: isIncome ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.06)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden', fontSize: 14, fontWeight: 800,
+        color: isIncome ? MN.green : MN.gold,
+      }}>
+        {logo
+          ? <img src={logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : initial}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: MN.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {pattern.merchant}
+        </div>
+        <div style={{ fontSize: 11, color: MN.faint, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {capitalise(pattern.frequency)}
+          {pattern.nextExpectedDate ? ` · Next ${formatShortDate(pattern.nextExpectedDate)}` : ''}
+          <span style={{ color: tagColor, fontWeight: 700 }}> · {tag.label}</span>
+        </div>
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? MN.green : MN.text, fontVariantNumeric: 'tabular-nums' }}>
+          {isIncome ? '+' : ''}{fmtDec.format(pattern.expectedAmount)}
+        </div>
+        <div style={{ fontSize: 10, color: MN.faint, marginTop: 1 }}>{fmt.format(pattern.annualEquivalent)}/yr</div>
+      </div>
+    </div>
+  );
+}
+
+function MobileRecurringView({
+  monthlyExpenses, monthlyIncome, netRecurring, potentialSavings,
+  subscriptions, bills, incomePatterns, cancelledPatterns,
+  activeTab, setActiveTab, recurringPatterns, anomaly,
+}: any) {
+  /* bills next 14 days */
+  const now = new Date();
+  const window14 = new Date(now.getTime() + 14 * 86_400_000);
+  const upcoming = (recurringPatterns as RecurringClassification[])
+    .filter(p => p.isActive && p.nextExpectedDate && p.transaction_type === 'Expense')
+    .map(p => ({ p, date: parseLocalDate(p.nextExpectedDate!) }))
+    .filter(({ date }) => date >= now && date <= window14)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 5);
+  const total14 = upcoming.reduce((s, { p }) => s + p.expectedAmount, 0);
+
+  const TABS = [
+    { id: 'all',           label: 'All' },
+    { id: 'subscriptions', label: 'Subscriptions' },
+    { id: 'bills',         label: 'Bills' },
+    { id: 'income',        label: 'Income' },
+  ];
+
+  const sections: { label: string; items: RecurringClassification[]; dimmed?: boolean }[] = [];
+  if (activeTab === 'all' || activeTab === 'subscriptions') sections.push({ label: 'Subscriptions', items: subscriptions });
+  if (activeTab === 'all' || activeTab === 'bills')         sections.push({ label: 'Bills', items: bills });
+  if (activeTab === 'all' || activeTab === 'income')        sections.push({ label: 'Income', items: incomePatterns });
+  if (activeTab === 'all' && cancelledPatterns.length > 0)  sections.push({ label: 'Likely Cancelled', items: cancelledPatterns, dimmed: true });
+
+  const highAlerts = (anomaly?.anomalies ?? []).slice(0, 3);
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* ── HERO ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 20, padding: '24px 20px 20px', marginBottom: 16,
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+          Recurring Expenses
+        </div>
+        <div style={{
+          fontSize: 42, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 12,
+          backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>
+          {fmt.format(monthlyExpenses)}<span style={{ fontSize: 20 }}>/mo</span>
+        </div>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: netRecurring >= 0 ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+          border: `1px solid ${netRecurring >= 0 ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
+          borderRadius: 100, padding: '5px 12px',
+          fontSize: 12, fontWeight: 700, color: netRecurring >= 0 ? MN.green : MN.red,
+        }}>
+          {netRecurring >= 0 ? '+' : '-'}{fmt.format(Math.abs(netRecurring))}/mo
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>net after recurring income</span>
+        </div>
+      </div>
+
+      {/* ── STAT TILES ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Income',   value: `${fmt.format(monthlyIncome)}`, color: MN.green },
+          { label: 'Alerts',   value: `${anomaly?.totalFlagged ?? 0}`, color: (anomaly?.totalFlagged ?? 0) > 0 ? MN.red : MN.green },
+          { label: 'Savings',  value: `${fmt.format(potentialSavings)}`, color: MN.gold },
+        ].map(s => (
+          <div key={s.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 12px' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── DUPLICATE SUBSCRIPTIONS (compact) ── */}
+      {(() => {
+        const active = (recurringPatterns as RecurringClassification[]).filter(p => p.isSubscription && p.isActive);
+        const byKey = new Map<string, RecurringClassification[]>();
+        active.forEach(p => byKey.set(p.merchantKey, [...(byKey.get(p.merchantKey) ?? []), p]));
+        const groups = Array.from(byKey.values()).filter(g => g.length >= 2);
+        const totalSavePerYr = groups.reduce((sum, g) => {
+          const cheapest = Math.min(...g.map(p => p.monthlyEquivalent));
+          return sum + (g.reduce((s, p) => s + p.monthlyEquivalent, 0) - cheapest) * 12;
+        }, 0);
+
+        return (
+          <div style={{
+            background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`,
+            borderLeft: `3px solid ${groups.length > 0 ? MN.amber : MN.green}`,
+            padding: '13px 14px', marginBottom: 16,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>Duplicate Subscriptions</div>
+              <div style={{
+                fontSize: 13, fontWeight: 800,
+                color: groups.length > 0 ? MN.amber : MN.green,
+              }}>
+                {groups.length}
+              </div>
+            </div>
+            {groups.length === 0 ? (
+              <div style={{ fontSize: 11, color: MN.faint, marginTop: 4 }}>✓ All subscriptions look unique</div>
+            ) : (
+              <>
+                <div style={{ fontSize: 11, color: MN.gold, fontWeight: 700, marginTop: 4 }}>
+                  Save up to {fmt.format(totalSavePerYr)}/yr by consolidating
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  {groups.map(g => {
+                    const cheapest = Math.min(...g.map(p => p.monthlyEquivalent));
+                    const savePerYr = (g.reduce((s, p) => s + p.monthlyEquivalent, 0) - cheapest) * 12;
+                    return (
+                      <div key={g[0].merchantKey} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '7px 0', borderTop: `1px solid ${MN.border}`,
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: MN.text, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {g[0].merchant} <span style={{ color: MN.faint, fontWeight: 400 }}>×{g.length}</span>
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: MN.amber, flexShrink: 0, marginLeft: 10 }}>
+                          {fmt.format(savePerYr)}/yr
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── ALERTS ── */}
+      {highAlerts.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          {highAlerts.map((a: any, i: number) => (
+            <div key={i} style={{
+              background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+              borderLeft: `3px solid ${a.severity === 'high' ? MN.red : a.severity === 'medium' ? MN.amber : MN.gold}`,
+              padding: '11px 13px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: MN.text, marginBottom: 2 }}>
+                {a.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} — {a.merchant}
+              </div>
+              <div style={{ fontSize: 11, color: MN.muted, lineHeight: 1.5 }}>{a.description}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── BILLS NEXT 14 DAYS ── */}
+      {upcoming.length > 0 && (
+        <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>Bills Next 14 Days</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: MN.red, fontVariantNumeric: 'tabular-nums' }}>−{fmt.format(total14)}</div>
+          </div>
+          {upcoming.map(({ p, date }, i) => (
+            <div key={`${p.merchantKey}-${p.firstSeenDate}`} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 0', borderBottom: i < upcoming.length - 1 ? `1px solid ${MN.border}` : 'none',
+            }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                background: 'rgba(46,211,198,0.12)', border: `1px solid rgba(46,211,198,0.25)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 800, color: MN.gold, fontVariantNumeric: 'tabular-nums',
+              }}>
+                {date.getDate()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.merchant}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                −{fmtDec.format(p.expectedAmount)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── FILTER CHIPS ── */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10, paddingBottom: 2 }}>
+        {TABS.map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              padding: '8px 16px', borderRadius: 100, whiteSpace: 'nowrap', flexShrink: 0,
+              border: `1px solid ${isActive ? MN.gold : MN.border}`,
+              background: isActive ? 'rgba(46,211,198,0.15)' : MN.card,
+              color: isActive ? MN.gold : MN.muted,
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', minHeight: 36,
+            }}>{tab.label}</button>
+          );
+        })}
+      </div>
+
+      {/* ── RECURRING LIST ── */}
+      {sections.filter(s => s.items.length > 0).map(section => (
+        <div key={section.label} style={{ marginBottom: 4 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)',
+            textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 2px 8px',
+          }}>
+            {section.label} · {section.items.length}
+          </div>
+          <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden' }}>
+            {section.items.map((p: RecurringClassification, i: number) => (
+              <MobileRecurringRow
+                key={`${p.merchantKey}-${p.firstSeenDate}`}
+                pattern={p}
+                dimmed={section.dimmed}
+                isLast={i === section.items.length - 1}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {sections.every(s => s.items.length === 0) && (
+        <div style={{ textAlign: 'center', color: MN.muted, fontSize: 13, padding: '28px 0' }}>
+          No recurring patterns detected yet.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 
@@ -853,6 +1158,7 @@ function LoadingState() {
 }
 
 export default function RecurringPage() {
+  const isMobile = useMobile();
   const { transactions, recurringPatterns, loading, error } = useTransactionData();
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
 
@@ -881,6 +1187,26 @@ export default function RecurringPage() {
 
   if (loading) return <LoadingState />;
   if (error)   return <div style={{ padding: 32, color: '#DC2626', fontSize: 13 }}>Error loading transactions: {error}</div>;
+
+  /* ── MOBILE BRANCH ── */
+  if (isMobile) {
+    return (
+      <MobileRecurringView
+        monthlyExpenses={monthlyExpenses}
+        monthlyIncome={monthlyIncome}
+        netRecurring={netRecurring}
+        potentialSavings={potentialSavings}
+        subscriptions={subscriptions}
+        bills={bills}
+        incomePatterns={incomePatterns}
+        cancelledPatterns={cancelledPatterns}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        recurringPatterns={recurringPatterns}
+        anomaly={anomaly}
+      />
+    );
+  }
 
   const tabs: { id: TabFilter; label: string }[] = [
     { id: 'all',           label: 'All' },

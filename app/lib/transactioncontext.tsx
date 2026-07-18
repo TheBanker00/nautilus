@@ -37,7 +37,7 @@ type TransactionContextType = {
 // -----------------------------------
 // CREATE CONTEXT
 // -----------------------------------
-const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
+export const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
 // -----------------------------------
 // PROVIDER

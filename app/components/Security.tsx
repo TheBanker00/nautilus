@@ -29,7 +29,21 @@ export default function Security() {
   const ref = useFadeUp() as React.RefObject<HTMLElement>;
 
   return (
-    <section ref={ref} className="py-20 px-[5vw] text-center">
+    <section ref={ref} className="relative overflow-hidden py-20 px-[5vw] text-center">
+      {/* Background — security art, covers the whole section (contained via overflow-hidden + cover) */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ backgroundImage: "url('/security.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        {/* legibility overlay so text + cards stay readable over the art */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, rgba(7,17,31,0.6) 0%, rgba(7,17,31,0.35) 45%, rgba(7,17,31,0.65) 100%)" }}
+        />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10">
       <div className="text-[0.75rem] font-bold tracking-[0.12em] uppercase text-gold mb-3 flex justify-center items-center gap-2">
         <span className="inline-block w-6 h-[1.5px] bg-gold" />
         Enterprise-Grade Security
@@ -59,6 +73,7 @@ export default function Security() {
         <a href="/landingpage/security" className="text-[0.85rem] font-semibold text-accent hover:text-accent/80 transition-colors no-underline">
           Read our full security architecture →
         </a>
+      </div>
       </div>
     </section>
   );

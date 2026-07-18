@@ -1,6 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import MobileTransactionList from '../../components/finance/MobileTransactionList';
+import MobileMonthStrip from '../../components/finance/MobileMonthStrip';
+import MobileScrubChart from '../../components/finance/MobileScrubChart';
+import MobileSearchFab from '../../components/finance/MobileSearchFab';
+
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
 import Link from 'next/link';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell,
@@ -94,10 +110,185 @@ function ThinAccent({ isDark, radius }: { isDark: boolean; radius?: string }) {
   );
 }
 
+/* ══════════════════════════════════════════════════════
+   MOBILE VIEW
+══════════════════════════════════════════════════════ */
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+};
+
+function MobileExpensesView({
+  totalExpenses, totalDelta, periodType, currentDate, setCurrentDate,
+  categoryIntelligence, totalCurrentSpend, topMerchants,
+  sparkData, groupedTransactions, onTransactionUpdated,
+}: any) {
+  const [expanded, setExpanded] = React.useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const up = totalDelta > 0; // spending up = bad
+
+  const cats = categoryIntelligence.filter((c: any) => c.currentSpend > 0);
+  const maxMerchant = topMerchants[0]?.amount ?? 1;
+
+  /* filter the pre-grouped feed by the search box, dropping now-empty date groups */
+  const filteredGroups = React.useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return groupedTransactions;
+    const out: Record<string, any[]> = {};
+    for (const [date, items] of Object.entries(groupedTransactions) as [string, any[]][]) {
+      const kept = items.filter((t: any) =>
+        [t.merchant, t.category, t.subcategory, t.name]
+          .some(f => typeof f === 'string' && f.toLowerCase().includes(q)));
+      if (kept.length) out[date] = kept;
+    }
+    return out;
+  }, [groupedTransactions, searchTerm]);
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* HERO — total spend */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '20px 20px 16px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+          Total Expenses · {format(currentDate, 'MMMM yyyy')}
+        </div>
+        <div style={{
+          fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+          backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>
+          {fmt(totalExpenses)}
+        </div>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: up ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.15)',
+          border: `1px solid ${up ? 'rgba(248,113,113,0.35)' : 'rgba(52,211,153,0.35)'}`,
+          borderRadius: 100, padding: '5px 12px',
+          fontSize: 12, fontWeight: 700, color: up ? MN.red : MN.green,
+        }}>
+          {up ? '▲' : '▼'} {fmt(Math.abs(totalDelta))}
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>vs prior {periodType}</span>
+        </div>
+
+        <MobileScrubChart height={104}
+          data={sparkData.map((d: any) => ({ label: d.label, value: d.expenses }))}
+          formatValue={v => fmt(v)}
+        />
+
+        {/* month pills — extension of the hero, no separate row above */}
+        <MobileMonthStrip currentDate={currentDate} onChange={setCurrentDate} variant="hero" />
+      </div>
+
+      {/* CATEGORY LIST — tap to expand */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Spending by Category</div>
+      <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+        {cats.map((cat: any, i: number) => {
+          const pct = totalCurrentSpend > 0 ? (cat.currentSpend / totalCurrentSpend) * 100 : 0;
+          const isOpen = expanded === cat.category;
+          const chgUp = cat.changeAmount > 0;
+          return (
+            <div key={cat.category} style={{ borderBottom: i < cats.length - 1 ? `1px solid ${MN.border}` : 'none' }}>
+              <div
+                onClick={() => setExpanded(isOpen ? null : cat.category)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', cursor: 'pointer', minHeight: 44 }}
+              >
+                <span style={{ fontSize: 18, flexShrink: 0 }}>{CATEGORY_EMOJI[cat.category] ?? '📋'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {cat.category}
+                  </div>
+                  <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 100, marginTop: 5, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: cat.color, borderRadius: 100 }} />
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums' }}>{fmt(cat.currentSpend)}</div>
+                  <div style={{ fontSize: 11, color: cat.changeAmount === 0 ? MN.muted : chgUp ? MN.red : MN.green, marginTop: 1 }}>
+                    {cat.changeAmount === 0 ? `${pct.toFixed(0)}%` : `${chgUp ? '↑' : '↓'} ${fmt(Math.abs(cat.changeAmount))}`}
+                  </div>
+                </div>
+                <svg width={12} height={12} viewBox="0 0 20 20" fill="none" stroke={'rgba(255,255,255,0.4)'} strokeWidth={2}
+                  style={{ flexShrink: 0, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                  <path d="M5 8l5 5 5-5" />
+                </svg>
+              </div>
+              {isOpen && (
+                <div style={{ padding: '0 14px 12px 44px', display: 'flex', gap: 18 }}>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: MN.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>YTD</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: MN.gold }}>{fmt(cat.ytdSpend)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: MN.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Prior</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: MN.muted }}>{fmt(cat.priorSpend)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: MN.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Txns</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>{cat.transactionCount}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {cats.length === 0 && (
+          <div style={{ textAlign: 'center', color: MN.muted, fontSize: 13, padding: '24px 0' }}>No spending this period.</div>
+        )}
+      </div>
+
+      {/* TOP MERCHANTS — horizontal scroll */}
+      {topMerchants.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Top Merchants</div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+            {topMerchants.map((m: any) => (
+              <div key={m.merchant} style={{
+                background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+                padding: '12px 14px', minWidth: 140, flexShrink: 0,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {m.logo ? <img src={m.logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 13 }}>💳</span>}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: MN.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.merchant}</div>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: MN.text, fontVariantNumeric: 'tabular-nums', marginBottom: 5 }}>{fmt(m.amount)}</div>
+                <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 100, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(m.amount / maxMerchant) * 100}%`, background: m.color, borderRadius: 100 }} />
+                </div>
+                <div style={{ fontSize: 10, color: MN.muted, marginTop: 5 }}>{m.count} txn{m.count !== 1 ? 's' : ''}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* FEED — heading sits on the page background, so use theme text not white */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 2px' }}>Transactions</div>
+      <MobileTransactionList groupedTransactions={filteredGroups} onTransactionUpdated={onTransactionUpdated} />
+
+      {/* auto-hiding search — slides up on scroll, tucks away when idle */}
+      <MobileSearchFab value={searchTerm} onChange={setSearchTerm} />
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    PAGE
 ═══════════════════════════════════════════════════════════ */
 export default function ExpensesPage() {
+  const isMobile = useMobile();
   const { transactions, refresh } = useFinancialData();
   const { currentDate, currentPeriod, comparisonPeriod, periodType, setPeriodType, setCurrentDate } = useFinancialPeriod();
 
@@ -264,6 +455,24 @@ export default function ExpensesPage() {
       href: null,
     },
   ];
+
+  if (isMobile) {
+    return (
+      <MobileExpensesView
+        totalExpenses={snapshot.analytics.totalExpenses}
+        totalDelta={totalDelta}
+        periodType={periodType}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        categoryIntelligence={categoryIntelligence}
+        totalCurrentSpend={totalCurrentSpend}
+        topMerchants={topMerchants}
+        sparkData={sparkData}
+        groupedTransactions={groupedTransactions}
+        onTransactionUpdated={handleTransactionUpdated}
+      />
+    );
+  }
 
   return (
     <div style={{ color: theme.text }}>

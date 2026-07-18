@@ -138,7 +138,7 @@ const sections = [
     body: [
       'If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:',
       'Email: ' + EMAIL,
-      'Mail: Nautilus Money, Inc., Privacy Department, [Address], United States',
+      'Mail: Nautilus Money, Privacy Department, support@nautilusmoney.com',
       'We will respond to all privacy-related inquiries within 30 days.',
     ],
   },

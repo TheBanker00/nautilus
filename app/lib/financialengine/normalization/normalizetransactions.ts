@@ -51,7 +51,9 @@ function detectRefund(
 
 function resolveTransactionType(
   transaction: IngestionTransaction,
-  taxonomy: { categoryType: 'Income' | 'Expense' | 'Transfer' }
+  // The RAW taxonomy lookup — undefined when the provider_subcategory code is unmapped.
+  // (Must not be the OTHER_OTHER fallback, or we can't distinguish a real hit from a miss.)
+  taxonomyHit: { categoryType: 'Income' | 'Expense' | 'Transfer' } | undefined
 ): 'Income' | 'Expense' | 'Transfer' {
 
   const raw =
@@ -66,16 +68,18 @@ function resolveTransactionType(
     return 'Transfer';
   }
 
-  // Use taxonomy categoryType as primary source
-  if (taxonomy.categoryType) {
-    // Refunds stay as Expense — is_refund flag handles the distinction
-    if (detectRefund(transaction)) {
-      return 'Expense';
-    }
-    return taxonomy.categoryType;
+  // Refunds stay as Expense — is_refund flag handles the distinction
+  if (detectRefund(transaction)) {
+    return 'Expense';
   }
 
-  // Fall back to explicit transaction_type on the ingestion record
+  // Trust the taxonomy only on a real hit
+  if (taxonomyHit?.categoryType) {
+    return taxonomyHit.categoryType;
+  }
+
+  // Unmapped code (e.g. a Plaid PFC we don't have in the taxonomy): honor the type the
+  // ingestion layer already computed — the Plaid sync derives it from the amount sign.
   if (transaction.transaction_type) {
     return transaction.transaction_type;
   }
@@ -121,12 +125,17 @@ export function normalizeTransaction(
 
   /**
    * Base Provider Mapping
+   * taxonomyHit is undefined when the provider code is unmapped; `taxonomy` adds the
+   * OTHER_OTHER fallback for category/subcategory resolution. Type resolution uses the
+   * raw hit so an unmapped code doesn't get silently forced to Expense.
    */
-  const taxonomy =
+  const taxonomyHit =
     IMPORT_TAXONOMY[
       transaction.provider_subcategory ??
       'UNKNOWN'
-    ] ||
+    ];
+  const taxonomy =
+    taxonomyHit ||
     IMPORT_TAXONOMY[
       'OTHER_OTHER'
     ];
@@ -139,7 +148,7 @@ export function normalizeTransaction(
       : transaction.amount;
 
   const transaction_type =
-    resolveTransactionType(transaction, taxonomy);
+    resolveTransactionType(transaction, taxonomyHit);
 
   // A refund is an Expense transaction where money came back in (positive amount)
   // Name-based detection catches edge cases where sign alone isn't reliable

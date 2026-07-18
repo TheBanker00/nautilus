@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 tsc_errors.txt
 tsc_out.txt
+
+# Claude Code local config/session data
+.claude/

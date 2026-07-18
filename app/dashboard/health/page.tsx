@@ -52,6 +52,182 @@ const T = {
   radiusMd:      '8px',
 };
 
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+/* ── mobile design tokens — shared mobile design system ── */
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+function mnScoreColor(s: number) {
+  return s >= 70 ? MN.green : s >= 50 ? MN.gold : s >= 40 ? MN.amber : MN.red;
+}
+
+function MobileHealthView({
+  totalScore, grade, gradeLabel, percentile, scoreTrend,
+  components, actions, fiDateStr, fiYrs, fiBase, profileSet,
+}: any) {
+  const [open, setOpen] = React.useState<string | null>(null);
+  const scoreColor = mnScoreColor(totalScore);
+  const R = 62, stroke = 11, size = 150;
+  const circ = 2 * Math.PI * R;
+  const dash = (totalScore / 100) * circ;
+
+  const statusColor = (s: string) =>
+    s === 'good' ? MN.green : s === 'ok' ? MN.muted : s === 'warn' ? MN.amber : MN.red;
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* ── HERO — score ring ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '24px 20px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden', textAlign: 'center',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 12 }}>
+          Nautilus Score
+        </div>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block', margin: '0 auto' }}>
+          <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke={scoreColor} strokeWidth={stroke}
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            style={{ transition: 'stroke-dasharray 0.8s ease' }} />
+          <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" fontSize={40} fontWeight={800} fill="#ffffff">{totalScore}</text>
+          <text x="50%" y="63%" textAnchor="middle" fontSize={11} fontWeight={600} fill="rgba(255,255,255,0.5)">out of 100</text>
+        </svg>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: scoreColor }}>{grade}</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: MN.text }}>{gradeLabel}</span>
+        </div>
+        <div style={{ fontSize: 12, color: MN.faint, marginTop: 5 }}>
+          Top {percentile}% of Nautilus users
+          {scoreTrend && (
+            <span style={{ color: scoreTrend.delta >= 0 ? MN.green : MN.red, fontWeight: 700, marginLeft: 8 }}>
+              {scoreTrend.delta >= 0 ? '▲' : '▼'} {Math.abs(scoreTrend.delta)} pts
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── FINANCIAL FREEDOM SUMMARY ── */}
+      {profileSet && fiBase && (
+        <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, marginBottom: 10 }}>Financial Freedom</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 4 }}>Projected Date</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: MN.gold }}>{fiDateStr}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 4 }}>Years Away</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: MN.text }}>{fiYrs}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SCORE COMPONENTS — expandable rows ── */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>
+        Score Breakdown
+      </div>
+      <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+        {components.map((c: any, i: number) => {
+          const isOpen = open === c.key;
+          const cColor = mnScoreColor(c.score);
+          return (
+            <div key={c.key} style={{ borderBottom: i < components.length - 1 ? `1px solid ${MN.border}` : 'none' }}>
+              <button
+                onClick={() => setOpen(isOpen ? null : c.key)}
+                style={{
+                  width: '100%', background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: '13px 14px', textAlign: 'left', color: MN.text,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: MN.faint }}>{c.weight}%</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: cColor, fontVariantNumeric: 'tabular-nums' }}>{c.score}</span>
+                    <span style={{ fontSize: 10, color: MN.muted, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                  </span>
+                </div>
+                <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                  <div style={{ height: 5, borderRadius: 3, width: `${c.score}%`, background: cColor, transition: 'width 0.6s ease' }} />
+                </div>
+              </button>
+              {isOpen && (
+                <div style={{ padding: '0 14px 14px' }}>
+                  <div style={{ fontSize: 12, color: MN.muted, lineHeight: 1.6, marginBottom: 10 }}>{c.insight}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {c.subMetrics.map((m: any) => (
+                      <div key={m.label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '8px 10px', border: `1px solid ${MN.border}` }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: MN.faint, marginBottom: 3 }}>{m.label}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: statusColor(m.status) }}>{m.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── TOP ACTIONS ── */}
+      {actions.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>
+            How to Improve
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {actions.slice(0, 3).map((a: any, i: number) => (
+              <div key={i} style={{
+                background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+                borderLeft: `3px solid ${a.priority === 'critical' ? MN.red : a.priority === 'high' ? MN.amber : MN.gold}`,
+                padding: '13px 14px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontSize: 16 }}>{a.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: MN.text, flex: 1 }}>{a.title}</span>
+                  {a.scoreImpact > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 800, color: MN.green, flexShrink: 0 }}>+{a.scoreImpact} pts</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: MN.muted, lineHeight: 1.5 }}>{a.detail}</div>
+                {a.secondaryImpact && (
+                  <div style={{ fontSize: 11, color: MN.gold, fontWeight: 600, marginTop: 6 }}>✦ {a.secondaryImpact}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function AccentLine() {
   const { T: TH } = useDashboardTheme();
   return (
@@ -520,6 +696,7 @@ function WealthTooltip({ active, payload, label }: any) {
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 export default function HealthScorePage() {
+  const isMobile = useMobile();
   const { T: TH } = useDashboardTheme();
   const headingColor = TH.isDark ? '#2ED3C6' : '#0a3fa8';
   const { currentSnapshot }                                                         = useWealthData();
@@ -968,6 +1145,25 @@ export default function HealthScorePage() {
 
   const fiDateStr = fiBase.months < 720 ? fiBase.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Beyond projection';
   const fiYrs     = fiBase.months < 720 ? (fiBase.months / 12).toFixed(1) : '—';
+
+  /* ── MOBILE BRANCH ── */
+  if (isMobile) {
+    return (
+      <MobileHealthView
+        totalScore={totalScore}
+        grade={grade}
+        gradeLabel={gradeLabel}
+        percentile={percentile}
+        scoreTrend={scoreTrend}
+        components={components}
+        actions={actions}
+        fiDateStr={fiDateStr}
+        fiYrs={fiYrs}
+        fiBase={fiBase}
+        profileSet={profileSet}
+      />
+    );
+  }
 
   return (
     <div>

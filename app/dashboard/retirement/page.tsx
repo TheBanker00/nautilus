@@ -310,7 +310,58 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
 /* ─────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
+/* ── mobile design system ── */
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+function MobileInputRow({ label, value, onChange, prefix, suffix, min, max, step }: {
+  label: string; value: number; onChange: (v: number) => void;
+  prefix?: string; suffix?: string; min?: number; max?: number; step?: number;
+}) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px', borderBottom: `1px solid ${MN.border}` }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: MN.text }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {prefix && <span style={{ fontSize: 13, color: MN.faint }}>{prefix}</span>}
+        <input
+          type="number" inputMode="decimal" value={value || ''} min={min} max={max} step={step}
+          onChange={e => onChange(Number(e.target.value) || 0)}
+          style={{
+            width: 88, padding: '8px 10px', borderRadius: 10, fontSize: 16,
+            background: 'rgba(255,255,255,0.06)', border: `1px solid ${MN.border}`,
+            color: MN.gold, fontWeight: 700, outline: 'none', textAlign: 'right',
+            boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums',
+          }}
+        />
+        {suffix && <span style={{ fontSize: 12, color: MN.faint }}>{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function RetirementPage() {
+  const isMobile = useMobile();
   const { currentSnapshot } = useWealthData();
   const { incomeAnalytics, expenseAnalytics, loading } = useFlowData();
 
@@ -521,6 +572,155 @@ export default function RetirementPage() {
           <div style={{ fontSize: 13, color: 'var(--t-text-tertiary)' }}>Building your retirement plan…</div>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  /* ── MOBILE VIEW ── */
+  if (isMobile) {
+    const R = 62, ringStroke = 11, ringSize = 150;
+    const circ = 2 * Math.PI * R;
+    const dash = (Math.min(100, readinessPct) / 100) * circ;
+    const mReadinessColor = readinessPct >= 100 ? MN.green : readinessPct >= 80 ? MN.gold : readinessPct >= 60 ? MN.amber : MN.red;
+
+    return (
+      <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+        {/* HERO — readiness ring */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+          borderRadius: 20, padding: '24px 20px', marginBottom: 16,
+          position: 'relative', overflow: 'hidden', textAlign: 'center',
+        }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 12 }}>
+            Retirement Readiness
+          </div>
+          <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} style={{ display: 'block', margin: '0 auto' }}>
+            <circle cx={ringSize / 2} cy={ringSize / 2} r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={ringStroke} />
+            <circle cx={ringSize / 2} cy={ringSize / 2} r={R} fill="none" stroke={mReadinessColor} strokeWidth={ringStroke}
+              strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+              transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
+              style={{ transition: 'stroke-dasharray 0.8s ease' }} />
+            <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" fontSize={36} fontWeight={800} fill="#ffffff">{readinessPct}%</text>
+            <text x="50%" y="63%" textAnchor="middle" fontSize={10} fontWeight={600} fill="rgba(255,255,255,0.5)">of FI number</text>
+          </svg>
+          <div style={{ fontSize: 15, fontWeight: 700, color: mReadinessColor, marginTop: 10 }}>{readinessLabel}</div>
+          <div style={{ fontSize: 12, color: MN.faint, marginTop: 4 }}>
+            {isRetired ? 'Nest egg' : `Nest egg at ${retirementAge}`}: <strong style={{ color: MN.gold }}>{fmtShort(primaryBalance)}</strong> · FI number {fmtShort(fiNumberWithSS)}
+          </div>
+        </div>
+
+        {/* STAT TILES */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {[
+            { label: 'Portfolio', value: fmtShort(currentNW), color: MN.gold },
+            { label: 'Ret. Income', value: `${fmt(totalMonthlyRetirementIncome)}`, color: monthlyGap > 0 ? MN.amber : MN.green },
+            { label: 'Lasts', value: longevityYears >= 60 ? '60+ yrs' : `${longevityYears.toFixed(0)} yrs`, color: longevityYears >= 30 ? MN.green : MN.amber },
+          ].map(s => (
+            <div key={s.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 10px' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* INCOME GAP */}
+        <div style={{
+          background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`,
+          borderLeft: `3px solid ${monthlyGap > 0 ? MN.amber : MN.green}`,
+          padding: '13px 14px', marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: monthlyGap > 0 ? MN.amber : MN.green, marginBottom: 4 }}>
+            {monthlyGap > 0 ? `⚠ ${fmt(monthlyGap)}/mo income gap` : `✓ ${fmt(Math.abs(monthlyGap))}/mo surplus in retirement`}
+          </div>
+          <div style={{ fontSize: 12, color: MN.muted, lineHeight: 1.5 }}>
+            Projected income {fmt(totalMonthlyRetirementIncome)}/mo vs {fmt(monthlyExpensesInRetirement)}/mo expenses
+            {ssMonthly > 0 ? ` (includes ${fmt(ssMonthly)}/mo Social Security)` : ''}.
+          </div>
+        </div>
+
+        {/* STRATEGY CHIPS */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Investment Strategy</div>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}>
+          {RISK_KEYS.map(k => {
+            const active = riskKey === k;
+            return (
+              <button key={k} onClick={() => setRiskKey(k)} style={{
+                padding: '9px 14px', borderRadius: 100, whiteSpace: 'nowrap', flexShrink: 0,
+                border: `1px solid ${active ? MN.gold : MN.border}`,
+                background: active ? 'rgba(46,211,198,0.15)' : MN.card,
+                color: active ? MN.gold : MN.muted,
+                fontSize: 12.5, fontWeight: 700, cursor: 'pointer', minHeight: 40,
+              }}>
+                {RISK_META[k].label} · {fmtShort(retBalance[k])}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* PROFILE INPUTS */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Your Plan</div>
+        <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+          <MobileInputRow label="Current Age" value={currentAge} onChange={v => setCurrentAge(Math.max(18, Math.min(80, v || 18)))} min={18} max={80} />
+          {!isRetired && (
+            <MobileInputRow label="Retire At" value={retirementAge} onChange={v => setRetirementAge(Math.max(currentAge + 1, Math.min(90, v || currentAge + 1)))} min={currentAge + 1} max={90} />
+          )}
+          <MobileInputRow label="Social Security" value={ssMonthly} onChange={setSsMonthly} prefix="$" suffix="/mo" />
+          <MobileInputRow label="Pension / Business" value={pensionMonthly} onChange={setPensionMonthly} prefix="$" suffix="/mo" />
+          <MobileInputRow label="Retirement Expenses" value={retExpenses} onChange={setRetExpenses} prefix="$" suffix="/mo" />
+          <MobileInputRow label="Monthly Savings" value={Math.round(effectiveMonthlySavings)} onChange={v => setPlannedMonthlySavings(v)} prefix="$" suffix="/mo" />
+          <MobileInputRow label="Withdrawal Rate" value={withdrawalRate} onChange={v => setWithdrawalRate(Math.max(1, Math.min(10, v || 4)))} suffix="%" step={0.1} />
+          {/* Retired toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: MN.text }}>Already Retired</span>
+            <button onClick={() => setIsRetired(r => !r)} style={{
+              padding: '7px 16px', borderRadius: 100,
+              border: `1px solid ${isRetired ? MN.green : MN.border}`,
+              background: isRetired ? 'rgba(52,211,153,0.15)' : 'transparent',
+              color: isRetired ? MN.green : MN.muted,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}>{isRetired ? 'Yes ✓' : 'No'}</button>
+          </div>
+        </div>
+
+        {/* MILESTONES */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Milestones</div>
+        <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+          {milestones.map((m, i) => {
+            const yrs = m.months != null && m.months > 0 ? (m.months / 12).toFixed(1) : null;
+            return (
+              <div key={m.label} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '12px 14px', borderBottom: i < milestones.length - 1 ? `1px solid ${MN.border}` : 'none',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  <span style={{ fontSize: 15 }}>{m.done ? '✅' : '🎯'}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: MN.text }}>{m.label}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: m.done ? MN.green : MN.gold, flexShrink: 0, marginLeft: 10 }}>
+                  {m.done ? 'Achieved' : m.months == null ? 'Beyond plan' : yrs ? `${yrs} yrs` : 'Now'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* INSIGHTS */}
+        {insights.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {insights.map((text, i) => (
+              <div key={i} style={{
+                background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+                borderLeft: `3px solid ${MN.gold}`, padding: '11px 13px',
+                fontSize: 12, color: MN.muted, lineHeight: 1.55,
+              }}>
+                ✦ {text}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

@@ -1,52 +1,39 @@
 import PhoneMockup from "./PhoneMockup";
 import Image from "next/image";
 
-const floatingCards = [
-  {
-    pos: "top-[6%] -left-[20%] animate-float1",
-    label: "Nautilus Score",
-    value: "82 — Excellent",
-    valueClass: "text-gold",
-  },
-  {
-    pos: "top-[22%] -right-[17%] animate-float2",
-    label: "vs. Your Income Bracket",
-    value: "↑ Top 16%",
-    valueClass: "text-green-400",
-  },
-  {
-    pos: "top-[44%] -left-[23%] animate-float3 hidden lg:block",
-    label: "Subscriptions Found",
-    value: "$247/mo bleeding out",
-    valueClass: "text-gold",
-  },
-  {
-    pos: "top-[62%] -right-[13%] animate-float1-slow",
-    label: "Net Worth YTD",
-    value: "+$29,400",
-    valueClass: "text-green-400",
-  },
-  {
-    pos: "bottom-[8%] -left-[15%] animate-float2-fast",
-    label: "Freedom Timeline",
-    value: "8.4 years out",
-    valueClass: "text-accent",
-  },
-];
-
 const trustBadges = ["Plaid Connected", "256-bit Encryption", "Read-Only Access", "No Account Numbers Stored"];
 
 export default function Hero() {
   return (
     <section className="relative min-h-screen pt-[120px] pb-20 px-[5vw] grid grid-cols-1 lg:grid-cols-2 gap-16 items-center overflow-hidden">
-      {/* Background */}
+      {/* Background — hero art on all sizes, contained to this section only.
+          The section has overflow-hidden and this layer is absolute inset-0,
+          so background-size:cover crops to fit without bleeding out. */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 70% 50%, rgba(11,45,137,0.35) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 15% 60%, rgba(46,211,198,0.06) 0%, transparent 60%)",
+          backgroundImage: "url('/Backround3.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
-      />
+      >
+        {/* legibility overlay so headline + copy stay readable over the art.
+            Horizontal scrim on desktop; a stronger vertical scrim on mobile where content is centered. */}
+        <div
+          className="absolute inset-0 lg:hidden"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.45) 50%, rgba(7,17,31,0.7) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 hidden lg:block"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(7,17,31,0.6) 0%, rgba(7,17,31,0.25) 45%, rgba(7,17,31,0.5) 100%)",
+          }}
+        />
+      </div>
       <div className="absolute inset-0 pointer-events-none hero-grid-overlay" />
 
       {/* LEFT */}
@@ -69,12 +56,12 @@ export default function Hero() {
           <span className="text-gold">Financial Future.</span>
         </h1>
 
-        <p className="text-[1.05rem] leading-[1.75] max-w-[480px] mb-10" style={{ color: '#7A90B8' }}>
+        <p className="text-[1.08rem] font-medium leading-[1.75] max-w-[480px] mb-10" style={{ color: '#DCE7F5', textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 2px 18px rgba(0,0,0,0.6)' }}>
           Bring every account, investment, bill, subscription, loan, and financial goal into one intelligent platform. Discover your Nautilus Score, see exactly where you stand today, and confidently chart your course to financial independence.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
           <a
             href="/landingpage/signup"
             className="inline-flex items-center gap-2 bg-gold hover:bg-gold-light text-bg font-bold text-[0.95rem] px-7 py-3.5 rounded-xl no-underline transition-all hover:-translate-y-0.5 hover:shadow-gold-glow-lg"
@@ -95,7 +82,7 @@ export default function Hero() {
         </div>
 
         {/* Trust */}
-        <div className="mt-10 flex flex-wrap gap-2">
+        <div className="mt-10 flex flex-wrap gap-2 justify-center lg:justify-start">
           {trustBadges.map((b) => (
             <span
               key={b}
@@ -109,7 +96,13 @@ export default function Hero() {
 
       {/* RIGHT */}
       <div className="relative z-10 flex items-center justify-center min-h-[600px]">
-        <div className="relative" style={{ width: 'min(1060px, 63vw)', height: 650 }}>
+        {/* Mobile — just the phone mockup as the example (no desktop screenshot) */}
+        <div className="lg:hidden flex justify-center w-full">
+          <PhoneMockup />
+        </div>
+
+        {/* Desktop — full composition: dashboard screenshot + phone + floating cards */}
+        <div className="hidden lg:block relative" style={{ width: 'min(1060px, 63vw)', height: 650 }}>
 
           {/* Glow behind everything */}
           <div
@@ -163,17 +156,6 @@ export default function Hero() {
             }}
           >
             <PhoneMockup />
-
-            {floatingCards.map((c, i) => (
-              <div
-                key={i}
-                className={`absolute glass rounded-xl px-3.5 py-2.5 whitespace-nowrap shadow-glass ${c.pos}`}
-                style={{ zIndex: 20 }}
-              >
-                <div className="text-[0.65rem] text-muted tracking-wide">{c.label}</div>
-                <div className={`text-[0.88rem] font-bold ${c.valueClass}`}>{c.value}</div>
-              </div>
-            ))}
           </div>
 
         </div>

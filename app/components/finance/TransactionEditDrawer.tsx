@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { showToast } from './toast';
 
 /* ── category → subcategory map ── */
 const CATEGORY_SUBCATEGORIES: Record<string, string[]> = {
@@ -59,7 +60,20 @@ interface Props {
 const fmt = (n: number) =>
   n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
 export default function TransactionEditDrawer({ transaction, onClose, onSaved }: Props) {
+  const isMobile = useMobile();
   const [tab, setTab]           = useState<'recategorize' | 'split'>('recategorize');
   const [category, setCategory] = useState('');
   const [subcategory, setSub]   = useState('');
@@ -131,6 +145,7 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
       if (!res.ok) throw new Error(await res.text());
       onSaved({ ...transaction, category, subcategory, is_manually_categorized: true });
       onClose();
+      if (isMobile) showToast(`Moved to ${subcategory || category} ✓`);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -150,6 +165,7 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
       if (!res.ok) throw new Error(await res.text());
       onSaved({ ...transaction, is_split: true, splits: splits.map(s => ({ ...s, amount: parseFloat(s.amount) })) });
       onClose();
+      if (isMobile) showToast(`Split across ${splits.length} categories ✓`);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -187,8 +203,10 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
   const availableCategories = categoriesForType(transaction.transaction_type);
   const availableSubs = CATEGORY_SUBCATEGORIES[category] ?? [];
 
+  // 16px on mobile — anything smaller triggers iOS Safari's auto-zoom on focus
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13,
+    width: '100%', padding: isMobile ? '11px 12px' : '9px 12px', borderRadius: 8,
+    fontSize: isMobile ? 16 : 13,
     background: 'var(--t-bg)', border: '1px solid var(--t-border)',
     color: 'var(--t-text-primary)', outline: 'none', boxSizing: 'border-box',
   };
@@ -212,18 +230,36 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
         zIndex: 1000, transition: 'opacity 0.2s',
       }} />
 
-      {/* Drawer */}
-      <div ref={drawerRef} style={{
+      {/* Drawer — right panel on desktop, bottom sheet on mobile */}
+      <div ref={drawerRef} style={isMobile ? {
+        position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '90dvh',
+        background: 'var(--t-surface-raised)', zIndex: 1001,
+        borderRadius: '20px 20px 0 0',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.4)',
+        display: 'flex', flexDirection: 'column',
+        animation: 'slideUp 0.25s ease',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      } : {
         position: 'fixed', top: 0, right: 0, bottom: 0, width: 420,
         background: 'var(--t-surface-raised)', zIndex: 1001,
         boxShadow: '-8px 0 40px rgba(0,0,0,0.3)',
         display: 'flex', flexDirection: 'column',
         animation: 'slideIn 0.22s ease',
       }}>
-        <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+        <style>{`
+          @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        `}</style>
+
+        {/* Drag handle (mobile only) */}
+        {isMobile && (
+          <div onClick={onClose} style={{ padding: '10px 0 2px', display: 'flex', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ width: 40, height: 4, borderRadius: 100, background: 'var(--t-border)' }} />
+          </div>
+        )}
 
         {/* Header */}
-        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--t-border)' }}>
+        <div style={{ padding: isMobile ? '10px 18px 14px' : '20px 24px 16px', borderBottom: '1px solid var(--t-border)', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--t-text-primary)', marginBottom: 2 }}>
@@ -271,10 +307,11 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--t-border)', padding: '0 24px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--t-border)', padding: isMobile ? '0 18px' : '0 24px', flexShrink: 0 }}>
           {(['recategorize', 'split'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
+              padding: isMobile ? '13px 16px' : '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
+              flex: isMobile ? 1 : undefined,
               fontSize: 13, fontWeight: 600,
               color: tab === t ? 'var(--t-card-accent)' : 'var(--t-text-tertiary)',
               borderBottom: tab === t ? '2px solid var(--t-card-accent)' : '2px solid transparent',
@@ -286,7 +323,7 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '16px 18px' : '20px 24px', WebkitOverflowScrolling: 'touch' }}>
 
           {/* ── RECATEGORIZE TAB ── */}
           {tab === 'recategorize' && (
@@ -405,15 +442,21 @@ export default function TransactionEditDrawer({ transaction, onClose, onSaved }:
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--t-border)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={btnSecondary}>Cancel</button>
+        <div style={{
+          padding: isMobile ? '12px 18px 14px' : '16px 24px',
+          borderTop: '1px solid var(--t-border)',
+          display: 'flex', gap: 10,
+          justifyContent: isMobile ? 'stretch' : 'flex-end',
+          flexShrink: 0,
+        }}>
+          <button onClick={onClose} style={{ ...btnSecondary, ...(isMobile ? { flex: 1, padding: '13px 16px', textAlign: 'center' as const } : {}) }}>Cancel</button>
           {tab === 'recategorize' && (
-            <button onClick={saveCategory} disabled={saving} style={btnPrimary}>
+            <button onClick={saveCategory} disabled={saving} style={{ ...btnPrimary, ...(isMobile ? { flex: 2, padding: '13px 20px' } : {}) }}>
               {saving ? 'Saving…' : 'Save Category'}
             </button>
           )}
           {tab === 'split' && (
-            <button onClick={saveSplits} disabled={saving || !splitValid} style={{ ...btnPrimary, opacity: (saving || !splitValid) ? 0.5 : 1 }}>
+            <button onClick={saveSplits} disabled={saving || !splitValid} style={{ ...btnPrimary, opacity: (saving || !splitValid) ? 0.5 : 1, ...(isMobile ? { flex: 2, padding: '13px 20px' } : {}) }}>
               {saving ? 'Saving…' : 'Save Splits'}
             </button>
           )}

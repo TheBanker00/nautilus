@@ -5,6 +5,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAx
 import AddAssetModal from '../../../components/accounts/addassetmodal';
 import { useFinancialData } from '../../../lib/financialdatacontext';
 import { useDashboardTheme } from '../../../lib/dashboardthemecontext';
+import MobileAccountSheet, { type AccountSheetData } from '../../../components/finance/MobileAccountSheet';
+import MobileMonthStrip from '../../../components/finance/MobileMonthStrip';
+import MobileScrubChart from '../../../components/finance/MobileScrubChart';
 
 /* ─────────────────────────────────────────────────────────────
    DESIGN TOKENS — tool workspace (matches recurring page)
@@ -160,14 +163,251 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   MOBILE HOOK
+───────────────────────────────────────────────────────────── */
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE ASSETS VIEW
+───────────────────────────────────────────────────────────── */
+/* category key → snapshot array key, for balance history lookups */
+const SNAP_KEY: Record<string, string> = {
+  cash:        'bankAccounts',
+  investments: 'investmentAccounts',
+  retirement:  'retirementAccounts',
+  realEstate:  'realEstate',
+  other:       'otherAssets',
+};
+
+function MobileAssetsView({
+  categories, totalAssets, totalChange, totalChangePct, assetsUp, onAddAsset,
+  allSnapshots, availableMonths, selectedMonthKey, setSelectedMonthKey, trendData,
+}: {
+  categories: any[];
+  totalAssets: number;
+  totalChange: number;
+  totalChangePct: number;
+  assetsUp: boolean;
+  onAddAsset: () => void;
+  allSnapshots: Record<string, any>;
+  availableMonths: string[];
+  selectedMonthKey: string;
+  setSelectedMonthKey: (key: string) => void;
+  trendData: { label: string; assets: number }[];
+}) {
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+  const [sheetAccount, setSheetAccount] = React.useState<AccountSheetData | null>(null);
+  const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
+
+  /* build monthly balance history for one account across snapshots */
+  function openAccountSheet(acc: any, c: any) {
+    const arrKey = SNAP_KEY[c.key];
+    const months = availableMonths.slice(-24);
+    const history = months
+      .map(m => {
+        const snap = allSnapshots[m];
+        const rows: any[] = snap?.[arrKey] ?? [];
+        const match = rows.find(r => (acc.id != null && r.id === acc.id) || (r.name && r.name === acc.name));
+        if (!match) return null;
+        const [y, mo] = m.split('-').map(Number);
+        return {
+          label: new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          value: Number(match[c.vf] || 0),
+        };
+      })
+      .filter(Boolean) as { label: string; value: number }[];
+
+    setSheetAccount({
+      name: acc.name || acc[c.sf] || 'Account',
+      subtitle: acc[c.sf] || c.label,
+      icon: c.icon,
+      color: c.color,
+      value: Number(acc[c.vf] || 0),
+      history,
+    });
+  }
+
+  const MN = {
+    card:   '#172554',
+    border: 'rgba(255,255,255,0.08)',
+    text:   '#ffffff',
+    muted:  'rgba(255,255,255,0.55)',
+    faint:  'rgba(255,255,255,0.35)',
+    green:  '#34D399',
+    red:    '#F87171',
+    gold:   '#2ED3C6',
+  };
+  const changeColor = assetsUp ? MN.green : MN.red;
+  const changeBg    = assetsUp ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)';
+
+  const [y, m] = selectedMonthKey.split('-').map(Number);
+  const selectedDate = new Date(y, (m || 1) - 1, 1);
+
+  return (
+    <div style={{ fontFamily: 'var(--font-body)', color: MN.text, paddingBottom: 16 }}>
+
+      {/* ── HERO ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '20px 20px 16px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+          Total Assets
+        </div>
+        <div style={{
+          fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+          backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>
+          {fmt(totalAssets)}
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 100, background: changeBg, border: `1px solid ${changeColor}40`, fontSize: 12, fontWeight: 700, color: changeColor }}>
+          {assetsUp ? '▲' : '▼'} {fmt(Math.abs(totalChange))} ({Math.abs(totalChangePct).toFixed(1)}%)
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>this period</span>
+        </div>
+
+        {/* scrubbable trendline */}
+        {trendData.length > 1 && (
+          <MobileScrubChart height={104}
+            data={trendData.map(d => ({ label: d.label, value: d.assets }))}
+            formatValue={v => fmt(v)}
+          />
+        )}
+
+        {/* month pills — extension of the hero, no separate row above */}
+        <MobileMonthStrip
+          currentDate={selectedDate}
+          onChange={(d) => setSelectedMonthKey(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)}
+          variant="hero"
+        />
+      </div>
+
+      {/* ── CATEGORY BREAKDOWN — one row, slide to see more ── */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, overflowX: 'auto', paddingBottom: 2, WebkitOverflowScrolling: 'touch' }}>
+        {categories.filter(c => c.total > 0).map(c => (
+          <div key={c.key} style={{
+            background: MN.card, borderRadius: 14, padding: '14px 16px',
+            border: `1px solid ${MN.border}`,
+            flex: '0 0 auto', width: 132,
+          }}>
+            <div style={{ fontSize: 18, marginBottom: 6 }}>{c.icon}</div>
+            <div style={{ fontSize: 10, color: MN.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: MN.text }}>{fmtK(c.total)}</div>
+            <div style={{ marginTop: 6, height: 3, borderRadius: 100, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${totalAssets > 0 ? (c.total / totalAssets) * 100 : 0}%`, background: c.color, borderRadius: 100 }} />
+            </div>
+            <div style={{ fontSize: 10, color: MN.faint, marginTop: 3 }}>{totalAssets > 0 ? ((c.total / totalAssets) * 100).toFixed(0) : 0}% of total</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── ACCOUNT GROUPS ── */}
+      {categories.filter(c => c.accounts.length > 0).map(c => {
+        const open = expanded[c.key] !== false; // default open
+        return (
+          <div key={c.key} style={{ marginBottom: 12 }}>
+            {/* Group header */}
+            <button
+              onClick={() => toggle(c.key)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 16px', background: MN.card, borderRadius: open ? '14px 14px 0 0' : 14,
+                border: `1px solid ${MN.border}`, borderBottom: `1px solid ${MN.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{c.icon}</div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: MN.text }}>{c.label}</div>
+                  <div style={{ fontSize: 12, color: MN.muted }}>{c.accounts.length} account{c.accounts.length !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: MN.text }}>{fmtK(c.total)}</div>
+                <div style={{ fontSize: 11, color: MN.gold, fontWeight: 600 }}>{open ? '▲' : '▼'}</div>
+              </div>
+            </button>
+
+            {/* Account rows */}
+            {open && (
+              <div style={{ background: MN.card, borderRadius: '0 0 14px 14px', border: `1px solid ${MN.border}`, borderTop: 'none', overflow: 'hidden' }}>
+                {c.accounts.map((acc: any, i: number) => {
+                  const val = Number(acc[c.vf] || 0);
+                  const isLast = i === c.accounts.length - 1;
+                  return (
+                    <div key={acc.id || i} onClick={() => openAccountSheet(acc, c)} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '13px 16px', cursor: 'pointer',
+                      borderBottom: isLast ? 'none' : `1px solid ${MN.border}`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${c.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width={18} height={18} viewBox="0 0 20 20" fill="none" stroke={c.color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 18h16M2 9h16M4 9V7M8 9V7M12 9V7M16 9V7M4 18v-9M8 18v-9M12 18v-9M16 18v-9M10 2L2 7h16z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: MN.text }}>{acc.name || acc[c.sf] || 'Account'}</div>
+                          <div style={{ fontSize: 11, color: MN.faint }}>{acc[c.sf] || ''}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums' }}>{fmt(val)}</div>
+                        <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* ── ADD ASSET BUTTON ── */}
+      <button
+        onClick={onAddAsset}
+        style={{
+          width: '100%', padding: '15px', borderRadius: 14, marginTop: 8,
+          background: 'linear-gradient(135deg, #0a3fa8, #4DA3FF)',
+          border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+          cursor: 'pointer', boxShadow: '0 4px 16px rgba(10,63,168,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}
+      >
+        <span style={{ fontSize: 20 }}>+</span> Add Asset
+      </button>
+
+      {/* Account detail bottom sheet */}
+      <MobileAccountSheet account={sheetAccount} onClose={() => setSheetAccount(null)} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 export default function AssetsPage() {
+  const isMobile = useMobile();
   const [showModal, setShowModal] = useState(false);
   const [chartRange, setChartRange] = useState<'6M'|'1Y'|'2Y'|'All'>('1Y');
   const { T: TH } = useDashboardTheme();
   const isDark = TH.isDark;
-  const { currentSnapshot, priorMonthSnapshot, trendData, availableMonths, allSnapshots, periodType } = useFinancialData();
+  const { currentSnapshot, priorMonthSnapshot, trendData, availableMonths, allSnapshots, periodType, selectedMonthKey, setSelectedMonthKey } = useFinancialData();
   const { bankAccounts = [], investmentAccounts = [], retirementAccounts = [], realEstate = [], otherAssets = [] } = currentSnapshot || {};
 
   const sumF       = (arr: any[], f: string) => arr.reduce((t, i) => t + Number(i[f] || 0), 0);
@@ -241,6 +481,25 @@ export default function AssetsPage() {
     const floor = Math.max(0, _chartMin * 0.90);
     return [floor, peakAssets * 1.02];
   }, [_chartMin, peakAssets]);
+
+  if (isMobile) return (
+    <>
+      {showModal && <AddAssetModal open={showModal} onClose={() => setShowModal(false)} />}
+      <MobileAssetsView
+        categories={categories}
+        totalAssets={totalAssets}
+        totalChange={totalChange}
+        totalChangePct={totalChangePct}
+        assetsUp={assetsUp}
+        onAddAsset={() => setShowModal(true)}
+        allSnapshots={allSnapshots}
+        availableMonths={availableMonths}
+        selectedMonthKey={selectedMonthKey}
+        setSelectedMonthKey={setSelectedMonthKey}
+        trendData={trendData}
+      />
+    </>
+  );
 
   return (
     <div style={{ color: 'var(--t-text-primary)' }}>

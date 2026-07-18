@@ -65,6 +65,128 @@ import { useDashboardTheme } from '../../lib/dashboardthemecontext';
 import { isInflow } from '../../lib/financialengine/cashflow/utils/transactiondirection';
 import { DEBT_PAYMENT_CATEGORIES } from '../../lib/financialengine/cashflow/calculatecashflow';
 
+import MobileTransactionList from '../../components/finance/MobileTransactionList';
+import MobileMonthStrip from '../../components/finance/MobileMonthStrip';
+import MobileScrubChart from '../../components/finance/MobileScrubChart';
+import MobileSearchFab from '../../components/finance/MobileSearchFab';
+
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+/* ══════════════════════════════════════════════════════
+   MOBILE VIEW — quick-decision layout
+══════════════════════════════════════════════════════ */
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+};
+
+function MobileCashFlowView({
+  netCashFlow, periodIncome, periodExpenses, savingsRate,
+  cashFlowDollarChange, cashFlowPctChange, periodType, currentDate,
+  setCurrentDate, sparkData, groupedTransactions, viewMode, setViewMode,
+  searchTerm, setSearchTerm,
+}: any) {
+  const trendUp = cashFlowDollarChange >= 0;
+
+  const TYPE_CHIPS = [
+    { id: 'all',       label: 'All' },
+    { id: 'income',    label: 'Income' },
+    { id: 'expenses',  label: 'Expenses' },
+    { id: 'transfers', label: 'Transfers' },
+  ];
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* HERO — net cash flow */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '20px 20px 16px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+          Net Cash Flow · {format(currentDate, 'MMMM yyyy')}
+        </div>
+        <div style={{
+          fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+          backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>
+          {netCashFlow < 0 ? '-' : ''}${Math.abs(Math.round(netCashFlow)).toLocaleString()}
+        </div>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: trendUp ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+          border: `1px solid ${trendUp ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
+          borderRadius: 100, padding: '5px 12px',
+          fontSize: 12, fontWeight: 700, color: trendUp ? MN.green : MN.red,
+        }}>
+          {trendUp ? '▲' : '▼'} ${Math.abs(Math.round(cashFlowDollarChange)).toLocaleString()} ({cashFlowPctChange >= 0 ? '+' : ''}{cashFlowPctChange.toFixed(1)}%)
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>vs prior {periodType}</span>
+        </div>
+
+        {/* scrubbable sparkline */}
+        <MobileScrubChart height={104}
+          data={sparkData.map((d: any) => ({ label: d.label, value: d.net }))}
+          formatValue={v => `${v < 0 ? '-' : ''}$${Math.abs(Math.round(v)).toLocaleString()}`}
+        />
+
+        {/* month pills — extension of the hero, no separate row above */}
+        <MobileMonthStrip currentDate={currentDate} onChange={setCurrentDate} variant="hero" />
+      </div>
+
+      {/* STAT TILES */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Income',   value: `$${Math.round(periodIncome).toLocaleString()}`,   color: MN.green },
+          { label: 'Expenses', value: `$${Math.round(periodExpenses).toLocaleString()}`, color: MN.red },
+          { label: 'Saved',    value: `${savingsRate.toFixed(0)}%`,                      color: savingsRate >= 0 ? MN.gold : MN.red },
+        ].map(s => (
+          <div key={s.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 12px' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* FILTER — type chips + search */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, overflowX: 'auto', paddingBottom: 2 }}>
+        {TYPE_CHIPS.map(c => (
+          <button key={c.id} onClick={() => setViewMode(c.id)} style={{
+            padding: '8px 16px', borderRadius: 100, whiteSpace: 'nowrap',
+            border: `1px solid ${viewMode === c.id ? MN.gold : MN.border}`,
+            background: viewMode === c.id ? 'rgba(46,211,198,0.15)' : MN.card,
+            color: viewMode === c.id ? MN.gold : MN.muted,
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+          }}>{c.label}</button>
+        ))}
+      </div>
+      {/* FEED */}
+      <MobileTransactionList groupedTransactions={groupedTransactions} />
+
+      {/* persistent search — thumb-zone FAB, expands into a live filter field */}
+      <MobileSearchFab value={searchTerm} onChange={setSearchTerm} />
+    </div>
+  );
+}
+
 function AccentLine({ isDark }: { isDark: boolean }) {
   const grad = isDark
     ? 'linear-gradient(90deg, #2ED3C6, #0891B2)'
@@ -73,6 +195,7 @@ function AccentLine({ isDark }: { isDark: boolean }) {
 }
 
 export default function CashFlowPage() {
+  const isMobile = useMobile();
   const {
     transactions,
     refresh,
@@ -395,6 +518,30 @@ const groupedTransactions =
   };
 
   const monthPickerValue = format(currentDate, 'yyyy-MM');
+
+  if (isMobile) {
+    const savingsRate = periodIncome > 0 ? (currentNetCashFlow / periodIncome) * 100 : 0;
+    const sparkData = trendData.map((d: any) => ({ label: d.period, net: d.net }));
+    return (
+      <MobileCashFlowView
+        netCashFlow={currentNetCashFlow}
+        periodIncome={periodIncome}
+        periodExpenses={periodExpenses}
+        savingsRate={savingsRate}
+        cashFlowDollarChange={cashFlowDollarChange}
+        cashFlowPctChange={cashFlowPctChange}
+        periodType={periodType}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        sparkData={sparkData}
+        groupedTransactions={groupedTransactions}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+    );
+  }
 
    return (
       <div style={{ color: C.text, fontFamily: 'var(--font-body)' }}>

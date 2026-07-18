@@ -40,6 +40,18 @@ INCOME_SALARY: {
   category: 'Payroll',
   subcategory: 'Salary',
 },
+// Plaid's real PFC detailed code for paycheck income is INCOME_WAGES (not INCOME_SALARY).
+INCOME_WAGES: {
+  categoryType: 'Income',
+  category: 'Payroll',
+  subcategory: 'Salary',
+},
+// Plaid's real PFC detailed catch-all is INCOME_OTHER_INCOME (not INCOME_OTHER).
+INCOME_OTHER_INCOME: {
+  categoryType: 'Income',
+  category: 'Other',
+  subcategory: 'Other Income',
+},
 INCOME_MILITARY: {
   categoryType: 'Income',
   category: 'Payroll',

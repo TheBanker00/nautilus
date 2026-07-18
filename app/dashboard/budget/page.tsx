@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { showToast } from '../../components/finance/toast';
 import { createClient } from '../../lib/supabase-browser';
 import { useTransactionData } from '../../lib/transactioncontext';
 import {
@@ -40,6 +41,52 @@ function loadStored(): StoredState {
     if (d) return JSON.parse(d);
   } catch {}
   return { catBudgets: {}, subBudgets: {}, incomeBudgets: {}, mode: 'lock-parent', bannerState: 'pending' };
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE — shared mobile design system
+───────────────────────────────────────────────────────────── */
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+/* plain numeric input for mobile edit rows — 16px prevents iOS zoom */
+function MobileBudgetInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      value={value === 0 ? '' : String(value)}
+      placeholder="0"
+      onChange={e => onChange(Math.max(0, Number(e.target.value) || 0))}
+      style={{
+        width: 90, padding: '8px 10px', borderRadius: 10, fontSize: 16,
+        background: 'rgba(255,255,255,0.06)', border: `1px solid ${MN.border}`,
+        color: MN.text, outline: 'none', textAlign: 'right', boxSizing: 'border-box',
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    />
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -333,6 +380,7 @@ function IncomeTrackingRow({ label, emoji, expected, received, editMode, onExpec
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 export default function BudgetPage() {
+  const isMobile = useMobile();
   const { transactions } = useTransactionData();
 
   const smartBudget = useMemo(() => calculateSmartBudget(transactions), [transactions]);
@@ -624,6 +672,155 @@ export default function BudgetPage() {
     const paceColor   = onPace ? 'var(--t-text-tertiary)' : underPace ? 'var(--t-green-text)' : 'var(--t-red-text)';
     const barColor    = budgetPct >= 100 ? 'var(--t-red)' : 'var(--t-primary)';
 
+    /* ── MOBILE TRACKING VIEW ── */
+    if (isMobile) {
+      const mtdSaved = mtdTotalIncome - mtdTotalSpent;
+      const mPaceColor = onPace ? MN.muted : underPace ? MN.green : MN.red;
+      return (
+        <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+          {/* HERO — left to spend */}
+          <div style={{
+            background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+            borderRadius: 20, padding: '24px 20px 20px', marginBottom: 16,
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+              background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+              Left to Spend · {monthLabel}
+            </div>
+            <div style={{
+              fontSize: 42, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 12,
+              backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${remaining >= 0 ? MN.gold : MN.red} 100%)`,
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+            }}>
+              {remaining >= 0 ? fmt(remaining) : '-' + fmt(Math.abs(remaining))}
+            </div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(255,255,255,0.15)`,
+              borderRadius: 100, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: mPaceColor,
+            }}>
+              {onPace ? '→ On pace' : underPace ? `↓ ${Math.abs(paceOffset)}% under pace` : `↑ ${paceOffset}% over pace`}
+              <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>Day {dayOfMonth} of {daysInMonth}</span>
+            </div>
+            {/* usage bar with pace tick */}
+            <div style={{ marginTop: 16, position: 'relative' }}>
+              <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.12)' }}>
+                <div style={{ height: 8, borderRadius: 4, width: `${Math.min(100, budgetPct)}%`, background: budgetPct >= 100 ? MN.red : MN.gold, transition: 'width 0.6s ease' }} />
+              </div>
+              <div style={{ position: 'absolute', top: -3, left: `${Math.min(99, monthPct * 100)}%`, width: 2, height: 14, background: '#ffffff', borderRadius: 1, opacity: 0.7 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontSize: 10, color: MN.faint }}>
+                <span>{Math.round(budgetPct)}% used</span>
+                <span>{fmt(totalActiveBudget)} budget</span>
+              </div>
+            </div>
+          </div>
+
+          {/* STAT TILES */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+            {[
+              { label: 'Spent',  value: fmt(mtdTotalSpent), color: mtdTotalSpent > totalActiveBudget ? MN.red : MN.text },
+              { label: 'Income', value: mtdTotalIncome > 0 ? fmt(mtdTotalIncome) : '—', color: MN.green },
+              { label: 'Saved',  value: (mtdSaved >= 0 ? '' : '-') + fmt(Math.abs(mtdSaved)), color: mtdSaved >= 0 ? MN.green : MN.red },
+            ].map(s => (
+              <div key={s.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 12px' }}>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* EDIT TOGGLE */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+            {editMode ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleCancelEdit} style={{ padding: '9px 16px', borderRadius: 100, border: `1px solid ${MN.border}`, background: MN.card, color: MN.muted, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={async () => { await handleSaveEdit(); showToast('Budget updated ✓'); }} disabled={saving} style={{ padding: '9px 18px', borderRadius: 100, border: 'none', background: 'linear-gradient(135deg, #0a3fa8, #4DA3FF)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving…' : 'Save'}</button>
+              </div>
+            ) : (
+              <button onClick={handleStartEdit} style={{ padding: '9px 16px', borderRadius: 100, border: `1px solid ${MN.border}`, background: MN.card, color: MN.gold, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✏️ Edit Budgets</button>
+            )}
+          </div>
+
+          {/* INCOME */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Income</div>
+          <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+            {(Object.keys(INCOME_GROUPS) as (keyof typeof INCOME_GROUPS)[]).map((group, gi, arr) => {
+              const expected = activeIncome[group] ?? 0;
+              const received = mtdIncomeByGroup[group] ?? 0;
+              const pct = expected > 0 ? Math.min(100, (received / expected) * 100) : 0;
+              return (
+                <div key={group} style={{ padding: '12px 14px', borderBottom: gi < arr.length - 1 ? `1px solid ${MN.border}` : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: MN.text }}>{group === 'Payroll Income' ? '💼' : '📈'} {group}</span>
+                    {editMode ? (
+                      <MobileBudgetInput value={editInc[group] ?? 0} onChange={v => setEditInc(prev => ({ ...prev, [group]: v }))} />
+                    ) : (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: MN.green, fontVariantNumeric: 'tabular-nums' }}>
+                        {fmt(received)} <span style={{ color: MN.faint, fontWeight: 400 }}>/ {fmt(expected)}</span>
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                    <div style={{ height: 5, borderRadius: 3, width: `${pct}%`, background: MN.green, transition: 'width 0.5s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* EXPENSE CATEGORIES */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Spending by Category</div>
+          <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden' }}>
+            {CANONICAL_CATEGORIES.map((cat, ci) => {
+              const budget = activeCats[cat] ?? 0;
+              const spent = mtdByCategory[cat] ?? 0;
+              const catRemaining = budget - spent;
+              const pct = budget > 0 ? Math.min(110, (spent / budget) * 100) : 0;
+              const rowBar = pct >= 100 ? MN.red : pct >= 85 ? MN.amber : MN.gold;
+              return (
+                <div key={cat} style={{ padding: '12px 14px', borderBottom: ci < CANONICAL_CATEGORIES.length - 1 ? `1px solid ${MN.border}` : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: MN.text, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {CATEGORY_EMOJI[cat] || '📦'} {cat}
+                    </span>
+                    {editMode ? (
+                      <MobileBudgetInput value={editCats[cat] ?? 0} onChange={v => setEditCats(prev => ({ ...prev, [cat]: v }))} />
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: catRemaining >= 0 ? MN.muted : MN.red, flexShrink: 0, marginLeft: 10 }}>
+                        {fmt(spent)} <span style={{ color: MN.faint, fontWeight: 400 }}>/ {fmt(budget)}</span>
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                    <div style={{ height: 5, borderRadius: 3, width: `${Math.min(100, pct)}%`, background: rowBar, transition: 'width 0.5s ease' }} />
+                  </div>
+                  {!editMode && (
+                    <div style={{ fontSize: 10, color: catRemaining >= 0 ? MN.faint : MN.red, marginTop: 4 }}>
+                      {catRemaining >= 0 ? `${fmt(catRemaining)} left` : `${fmt(Math.abs(catRemaining))} over`}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {saveError && (
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 12, background: 'rgba(248,113,113,0.12)', border: `1px solid rgba(248,113,113,0.3)`, color: MN.red, fontSize: 12 }}>
+              ⚠ Save failed: {saveError}
+            </div>
+          )}
+          {editMode && !saveError && (
+            <div style={{ marginTop: 10, fontSize: 11, color: MN.faint, textAlign: 'center' }}>
+              Changes take effect next month · MTD numbers reflect actual spending
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div style={{ padding: '0 0 72px' }}>
 
@@ -821,6 +1018,144 @@ export default function BudgetPage() {
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--t-text-tertiary)', textAlign: 'right' }}>
             Changes will take effect next month · current MTD numbers reflect actual spending
           </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── MOBILE SETUP VIEW ── */
+  if (isMobile) {
+    return (
+      <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+        {/* HERO */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+          borderRadius: 20, padding: '24px 20px 20px', marginBottom: 16,
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+            Monthly Budget
+          </div>
+          <div style={{
+            fontSize: 42, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 12,
+            backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            {fmt(totalBudgeted)}
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: savings >= 0 ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+            border: `1px solid ${savings >= 0 ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
+            borderRadius: 100, padding: '5px 12px',
+            fontSize: 12, fontWeight: 700, color: savings >= 0 ? MN.green : MN.red,
+          }}>
+            {monthlyIncome > 0
+              ? `${savings >= 0 ? '+' : '-'}${fmt(Math.abs(savings))}/mo ${savings >= 0 ? 'expected savings' : 'over income'}`
+              : 'Set expected income below'}
+          </div>
+        </div>
+
+        {/* RECOMMENDATION */}
+        {smartBudget.hasHistory && bannerState === 'pending' && (
+          <div style={{ background: MN.card, borderRadius: 16, border: `1px solid rgba(46,211,198,0.3)`, padding: '16px 14px', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, marginBottom: 5 }}>
+              💡 Smart budget ready
+            </div>
+            <div style={{ fontSize: 12, color: MN.muted, lineHeight: 1.5, marginBottom: 12 }}>
+              We analyzed {smartBudget.historyLabel} of your spending and built a recommended budget of <strong style={{ color: MN.gold }}>{fmt(smartBudget.totalSuggestedBudget)}/mo</strong>.
+            </div>
+            <button onClick={handleAcceptAll} disabled={saving} style={{
+              width: '100%', padding: '13px 0', borderRadius: 12, border: 'none',
+              background: 'linear-gradient(135deg, #0a3fa8, #4DA3FF)', color: '#fff',
+              fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.7 : 1, marginBottom: 8,
+            }}>
+              {saving ? 'Saving…' : 'Accept & Save'}
+            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setBannerState('accepted')} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: `1px solid ${MN.border}`, background: 'transparent', color: MN.muted, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                Review & Adjust
+              </button>
+              <button onClick={() => { setCatBudgets({}); setSubBudgets({}); setBannerState('manual'); }} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: `1px solid ${MN.border}`, background: 'transparent', color: MN.muted, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                Build Manually
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* INCOME INPUTS */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Expected Income</div>
+        <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+          {smartBudget.incomeGroups.map((grp, gi, arr) => (
+            <div key={grp.group} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '12px 14px', borderBottom: gi < arr.length - 1 ? `1px solid ${MN.border}` : 'none',
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: MN.text }}>{grp.group === 'Payroll Income' ? '💼' : '📈'} {grp.group}</div>
+                <div style={{ fontSize: 10, color: MN.faint, marginTop: 2 }}>
+                  {grp.historicalAvg > 0 ? `Avg ${fmt(grp.historicalAvg)}/mo` : 'No history'}
+                </div>
+              </div>
+              <MobileBudgetInput
+                value={effectiveIncomeBudgets[grp.group] ?? 0}
+                onChange={v => setIncomeBudgets(prev => ({ ...prev, [grp.group]: v }))}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* CATEGORY INPUTS */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Category Budgets</div>
+        <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+          {CANONICAL_CATEGORIES.map((cat, ci) => {
+            const catData = smartBudget.categories.find(c => c.category === cat);
+            return (
+              <div key={cat} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '12px 14px', borderBottom: ci < CANONICAL_CATEGORIES.length - 1 ? `1px solid ${MN.border}` : 'none',
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {CATEGORY_EMOJI[cat] || '📦'} {cat}
+                  </div>
+                  <div style={{ fontSize: 10, color: MN.faint, marginTop: 2 }}>
+                    {catData && catData.historicalAvg > 0 ? `Avg ${fmt(catData.historicalAvg)}/mo` : 'No history'}
+                  </div>
+                </div>
+                <MobileBudgetInput
+                  value={effectiveBudgets[cat] ?? 0}
+                  onChange={v => handleCatChange(cat, v)}
+                />
+              </div>
+            );
+          })}
+          {/* Total row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 14px', background: 'rgba(255,255,255,0.04)', borderTop: `1px solid ${MN.border}` }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: MN.text }}>Total</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: MN.gold, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalBudgeted)}</span>
+          </div>
+        </div>
+
+        {saveError && (
+          <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 12, background: 'rgba(248,113,113,0.12)', border: `1px solid rgba(248,113,113,0.3)`, color: MN.red, fontSize: 12 }}>
+            ⚠ Save failed: {saveError}
+          </div>
+        )}
+
+        {bannerState !== 'pending' && (
+          <button onClick={async () => { await handleSetupSave(); showToast('Budget saved ✓'); }} disabled={saving} style={{
+            width: '100%', padding: '15px 0', borderRadius: 14, border: 'none',
+            background: 'linear-gradient(135deg, #0a3fa8, #4DA3FF)', color: '#fff',
+            fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+            opacity: saving ? 0.7 : 1, boxShadow: '0 4px 16px rgba(10,63,168,0.3)',
+          }}>
+            {saving ? 'Saving…' : '💾 Save Budget'}
+          </button>
         )}
       </div>
     );

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { showToast } from '../../components/finance/toast';
 import { useFinancialData as useWealthData } from '../../lib/financialdatacontext';
 import { useFinancialData as useFlowData }   from '../../lib/hooks/usefinancialdata';
 import {
@@ -1584,7 +1585,97 @@ function HeroCard({ goals, taMap, monthlySurplus }: {
 /* ─────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   MOBILE VIEW — shared mobile design system
+───────────────────────────────────────────────────────────── */
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+function MobileGoalCard({ goal, ta, onEdit, onAddFunds }: {
+  goal: LifeGoal; ta: any; onEdit: () => void; onAddFunds: (amt: number) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [amt, setAmt] = useState('');
+  const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentSaved / goal.targetAmount) * 100) : 0;
+  const done = ta?.done;
+  const onTrack = ta?.onTrack || done;
+  const statusColor = done ? MN.green : onTrack ? MN.gold : MN.amber;
+
+  return (
+    <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '14px 14px', marginBottom: 12 }}>
+      <div onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+          background: `${goal.color}22`, border: `1px solid ${goal.color}40`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+        }}>{goal.emoji}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal.name}</div>
+          <div style={{ fontSize: 11, color: MN.faint, marginTop: 2 }}>
+            {fmt(goal.currentSaved)} of {fmt(goal.targetAmount)}
+            {goal.monthlyContrib > 0 ? ` · ${fmt(goal.monthlyContrib)}/mo` : ''}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: goal.color, fontVariantNumeric: 'tabular-nums' }}>{pct.toFixed(0)}%</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: statusColor }}>{done ? '🎉 Done' : onTrack ? 'On track' : 'Behind'}</div>
+        </div>
+      </div>
+      <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', marginTop: 10 }}>
+        <div style={{ height: 6, borderRadius: 3, width: `${pct}%`, background: goal.color, transition: 'width 0.6s ease' }} />
+      </div>
+      {!done && !onTrack && ta?.gapPerMonth > 0 && (
+        <div style={{ fontSize: 11, color: MN.amber, fontWeight: 600, marginTop: 6 }}>
+          Add {fmt(ta.gapPerMonth)}/mo to hit {fmtShortDate(goal.targetDate)}
+        </div>
+      )}
+      {/* Quick add funds */}
+      <div style={{ marginTop: 10 }}>
+        {adding ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="number" inputMode="decimal" placeholder="Amount" value={amt} autoFocus
+              onChange={e => setAmt(e.target.value)}
+              style={{ flex: 1, padding: '9px 12px', borderRadius: 10, fontSize: 16, background: 'rgba(255,255,255,0.06)', border: `1px solid ${MN.border}`, color: MN.text, outline: 'none', boxSizing: 'border-box' }}
+            />
+            <button onClick={() => { const v = parseFloat(amt); if (v > 0) { onAddFunds(v); showToast(`Added ${fmt(v)} to ${goal.name} ✓`); } setAdding(false); setAmt(''); }} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: goal.color, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Add</button>
+            <button onClick={() => { setAdding(false); setAmt(''); }} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${MN.border}`, background: 'transparent', color: MN.muted, fontSize: 13, cursor: 'pointer' }}>✕</button>
+          </div>
+        ) : (
+          <button onClick={() => setAdding(true)} style={{
+            width: '100%', padding: '9px 0', borderRadius: 10,
+            border: `1px solid ${goal.color}40`, background: `${goal.color}15`,
+            color: goal.color, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}>+ Add Funds</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function GoalsPage() {
+  const isMobile = useMobile();
   const { currentSnapshot }               = useWealthData();
   const { incomeAnalytics, expenseAnalytics } = useFlowData();
 
@@ -1676,6 +1767,153 @@ export default function GoalsPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
         <div style={{ width: 32, height: 32, border: `3px solid var(--t-border)`, borderTop: `3px solid var(--t-primary)`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  /* ── MOBILE VIEW ── */
+  if (isMobile) {
+    const behindGoals = goals.filter(g => !taMap[g.id]?.onTrack && !taMap[g.id]?.done);
+    return (
+      <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+        {/* WIZARD — reuse desktop wizard (stacks vertically) */}
+        {(showForm || editing) && (
+          <GoalWizard
+            initial={editing}
+            onSave={upsert}
+            onCancel={() => { setShowForm(false); setEditing(null); }}
+            defaultCashBalance={cashBalance}
+            defaultMonthlyExpenses={avgMonthlyExpenses}
+            saving={saving}
+          />
+        )}
+
+        {/* HERO */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+          borderRadius: 20, padding: '24px 20px 20px', marginBottom: 16,
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+            Life Goals · Total Saved
+          </div>
+          <div style={{
+            fontSize: 42, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 12,
+            backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            {fmt(totalSavedAmt)}
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'rgba(46,211,198,0.15)', border: '1px solid rgba(46,211,198,0.35)',
+            borderRadius: 100, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: MN.gold,
+          }}>
+            {overallPct}% of {fmt(totalTargetAmt)}
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>· {onTrackCount}/{goals.length} on track</span>
+          </div>
+          {goals.length > 0 && (
+            <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.12)', marginTop: 14 }}>
+              <div style={{ height: 8, borderRadius: 4, width: `${overallPct}%`, background: `linear-gradient(90deg, #0a3fa8, ${MN.gold})`, transition: 'width 0.8s ease' }} />
+            </div>
+          )}
+        </div>
+
+        {/* NEW GOAL */}
+        <button onClick={() => { setEditing(null); setShowForm(s => !s); }} style={{
+          width: '100%', padding: '14px 0', borderRadius: 14, marginBottom: 16,
+          background: 'linear-gradient(135deg, #0a3fa8, #4DA3FF)', border: 'none',
+          color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(10,63,168,0.3)',
+        }}>
+          {showForm && !editing ? '✕ Cancel' : '+ New Goal'}
+        </button>
+
+        {goals.length === 0 ? (
+          <div style={{ background: MN.card, borderRadius: 16, border: `1px dashed ${MN.border}`, padding: '36px 20px', textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: MN.text, marginBottom: 6 }}>Set your first life goal</div>
+            <div style={{ fontSize: 12, color: MN.muted, lineHeight: 1.6, marginBottom: 16 }}>
+              Home, emergency fund, education, early retirement — define it and Nautilus shows you how to get there.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {(['home','emergency','education','retirement'] as GoalCategoryKey[]).map(k => (
+                <button key={k} onClick={() => setShowForm(true)} style={{
+                  padding: '10px 14px', borderRadius: 100,
+                  background: `${GOAL_CATS[k].defaultColor}18`, border: `1px solid ${GOAL_CATS[k].defaultColor}40`,
+                  color: GOAL_CATS[k].defaultColor, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                }}>
+                  {GOAL_CATS[k].emoji} {GOAL_CATS[k].label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* FILTER CHIPS */}
+            {activeCategories.length > 1 && (
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12, paddingBottom: 2 }}>
+                <button onClick={() => setFilter('all')} style={{
+                  padding: '8px 14px', borderRadius: 100, whiteSpace: 'nowrap', flexShrink: 0,
+                  border: `1px solid ${filter === 'all' ? MN.gold : MN.border}`,
+                  background: filter === 'all' ? 'rgba(46,211,198,0.15)' : MN.card,
+                  color: filter === 'all' ? MN.gold : MN.muted,
+                  fontSize: 12.5, fontWeight: 700, cursor: 'pointer', minHeight: 36,
+                }}>All ({goals.length})</button>
+                {activeCategories.map(k => (
+                  <button key={k} onClick={() => setFilter(k)} style={{
+                    padding: '8px 14px', borderRadius: 100, whiteSpace: 'nowrap', flexShrink: 0,
+                    border: `1px solid ${filter === k ? GOAL_CATS[k].defaultColor : MN.border}`,
+                    background: filter === k ? `${GOAL_CATS[k].defaultColor}22` : MN.card,
+                    color: filter === k ? GOAL_CATS[k].defaultColor : MN.muted,
+                    fontSize: 12.5, fontWeight: 700, cursor: 'pointer', minHeight: 36,
+                  }}>
+                    {GOAL_CATS[k].emoji} {GOAL_CATS[k].label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* GOAL CARDS */}
+            {filteredGoals.map(g => (
+              <MobileGoalCard
+                key={g.id}
+                goal={g}
+                ta={taMap[g.id]}
+                onEdit={() => { setEditing(g); setShowForm(false); }}
+                onAddFunds={amt => addFunds(g.id, amt)}
+              />
+            ))}
+
+            {/* INSIGHTS */}
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 2px 8px' }}>Insights</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {monthlySurplus > 0 && totalCommitted < monthlySurplus && (
+                <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, borderLeft: `3px solid ${MN.green}`, padding: '11px 13px', fontSize: 12, color: MN.muted, lineHeight: 1.55 }}>
+                  💚 <strong style={{ color: MN.green }}>{fmt(monthlySurplus - totalCommitted)}/mo unallocated</strong> above your goal contributions — route it to your top goal to accelerate.
+                </div>
+              )}
+              {monthlySurplus > 0 && totalCommitted > monthlySurplus && (
+                <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, borderLeft: `3px solid ${MN.red}`, padding: '11px 13px', fontSize: 12, color: MN.muted, lineHeight: 1.55 }}>
+                  ⚠️ Contributions ({fmt(totalCommitted)}/mo) exceed your surplus ({fmt(monthlySurplus)}/mo) by <strong style={{ color: MN.red }}>{fmt(totalCommitted - monthlySurplus)}</strong>.
+                </div>
+              )}
+              {behindGoals.map(g => (
+                <div key={g.id} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, borderLeft: `3px solid ${MN.amber}`, padding: '11px 13px', fontSize: 12, color: MN.muted, lineHeight: 1.55 }}>
+                  {g.emoji} <strong style={{ color: MN.text }}>{g.name}</strong> is behind — add <strong style={{ color: MN.amber }}>{fmt(taMap[g.id]?.gapPerMonth ?? 0)}/mo</strong> to hit {fmtShortDate(g.targetDate)}.
+                </div>
+              ))}
+              {goals.length > 0 && goals.every(g => taMap[g.id]?.onTrack || taMap[g.id]?.done) && (
+                <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, borderLeft: `3px solid ${MN.green}`, padding: '11px 13px', fontSize: 12, color: MN.green, fontWeight: 600 }}>
+                  ✅ All goals on track. You're building the life you planned.
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     );
   }

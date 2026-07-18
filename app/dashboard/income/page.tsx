@@ -1,6 +1,120 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import MobileTransactionList from '../../components/finance/MobileTransactionList';
+import MobileMonthStrip from '../../components/finance/MobileMonthStrip';
+import MobileScrubChart from '../../components/finance/MobileScrubChart';
+
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+/* ══════════════════════════════════════════════════════
+   MOBILE VIEW
+══════════════════════════════════════════════════════ */
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+};
+
+function MobileIncomeView({
+  ytdTotal, ytdVariance, currentPeriodIncome, mtdByCategory,
+  depositCount, sparkData, groupedFeed, currentYear,
+  currentDate, setCurrentDate,
+}: any) {
+  const up = ytdVariance >= 0;
+  const fmtM = (n: number) => '$' + Math.round(n).toLocaleString('en-US');
+
+  const SOURCES = ['Payroll', 'Business', 'Investment', 'Other'];
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* HERO — YTD income */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '20px 20px 16px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+          YTD Income · {currentYear}
+        </div>
+        <div style={{
+          fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+          backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>
+          {fmtM(ytdTotal)}
+        </div>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: up ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+          border: `1px solid ${up ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
+          borderRadius: 100, padding: '5px 12px',
+          fontSize: 12, fontWeight: 700, color: up ? MN.green : MN.red,
+        }}>
+          {up ? '▲' : '▼'} {fmtM(Math.abs(ytdVariance))}
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>vs prior year</span>
+        </div>
+
+        <MobileScrubChart height={104}
+          data={sparkData.map((d: any) => ({ label: d.label, value: d.income }))}
+          formatValue={v => fmtM(v)}
+        />
+
+        {/* month pills — extension of the hero, no separate row above */}
+        <MobileMonthStrip currentDate={currentDate} onChange={setCurrentDate} variant="hero" />
+      </div>
+
+      {/* MTD total banner */}
+      <div style={{
+        background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+        padding: '14px 16px', marginBottom: 12,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 3 }}>This Period</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: MN.green }}>{fmtM(currentPeriodIncome)}</div>
+        </div>
+        <div style={{ fontSize: 12, color: MN.muted }}>{depositCount} deposit{depositCount !== 1 ? 's' : ''}</div>
+      </div>
+
+      {/* 2x2 SOURCE TILES */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {SOURCES.map(src => {
+          const amount = mtdByCategory[src] ?? 0;
+          const pct = currentPeriodIncome > 0 ? Math.round((amount / currentPeriodIncome) * 100) : 0;
+          return (
+            <div key={src} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '13px 14px' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{src}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: MN.text, letterSpacing: '-0.02em' }}>{fmtM(amount)}</div>
+              <div style={{ fontSize: 11, color: MN.muted, marginTop: 3 }}>{amount > 0 ? `${pct}% of period` : '—'}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* FEED — heading sits on the page background, so use theme text not white */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 2px' }}>Recent Income</div>
+      <MobileTransactionList groupedTransactions={groupedFeed} />
+    </div>
+  );
+}
 
 import {
   ResponsiveContainer,
@@ -75,6 +189,7 @@ function groupTransactionsByDate(transactions: any[]) {
 ----------------------------------- */
 
 export default function IncomePage() {
+  const isMobile = useMobile();
   /**
    * 🧠 FINAL CANONICAL INPUT
    * This is now fully enriched Transaction[]
@@ -562,6 +677,23 @@ const trendData = useMemo(() => {
     { label: 'Other',      key: 'Other'      },
     { label: 'MTD Total',  key: '__total__'  },
   ];
+
+  if (isMobile) {
+    return (
+      <MobileIncomeView
+        ytdTotal={ytdTotal}
+        ytdVariance={ytdVariance}
+        currentPeriodIncome={currentPeriodIncome}
+        mtdByCategory={mtdByCategory}
+        depositCount={incomeTransactions.length}
+        sparkData={sparkData}
+        groupedFeed={groupedFeed}
+        currentYear={currentDate.getFullYear()}
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+      />
+    );
+  }
 
   return (
     <div style={{ color: T.text, fontFamily: 'var(--font-body)' }}>

@@ -16,6 +16,9 @@ import {
 import { useFinancialData } from '../../../lib/financialdatacontext';
 import { useDashboardTheme } from '../../../lib/dashboardthemecontext';
 import AddLiabilityModal, { type LiabilityInitial } from '../../../components/accounts/addliabilitymodal';
+import MobileAccountSheet, { type AccountSheetData } from '../../../components/finance/MobileAccountSheet';
+import MobileMonthStrip from '../../../components/finance/MobileMonthStrip';
+import MobileScrubChart from '../../../components/finance/MobileScrubChart';
 
 /* ─── brand accent constants (same in light + dark) ─── */
 const BRAND = {
@@ -102,9 +105,207 @@ function ChartTooltip({ active, payload, label }: any) {
   );
 }
 
+/* ─── mobile hook ─── */
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+/* ─── mobile liabilities view ─── */
+function MobileLiabilitiesView({
+  liabilities, totals, totalDebt, debtChange, debtChangePct, debtDown, CAT, onAdd,
+  allSnapshots, availableMonths, selectedMonthKey, setSelectedMonthKey, trendData,
+}: {
+  liabilities: any; totals: any; totalDebt: number;
+  debtChange: number; debtChangePct: number; debtDown: boolean;
+  CAT: any; onAdd: () => void;
+  allSnapshots: Record<string, any>; availableMonths: string[];
+  selectedMonthKey: string; setSelectedMonthKey: (key: string) => void;
+  trendData: { label: string; liabilities: number }[];
+}) {
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+  const [sheetAccount, setSheetAccount] = React.useState<AccountSheetData | null>(null);
+  const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
+
+  /* monthly balance history for one liability across snapshots */
+  function openLiabilitySheet(item: any, catKey: string) {
+    const months = availableMonths.slice(-24);
+    const history = months
+      .map(m => {
+        const rows: any[] = allSnapshots[m]?.liabilities?.[catKey] ?? [];
+        const match = rows.find(r => (item.id != null && r.id === item.id) || (r.name && r.name === item.name));
+        if (!match) return null;
+        const [y, mo] = m.split('-').map(Number);
+        return {
+          label: new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          value: Number(match.amount || 0),
+        };
+      })
+      .filter(Boolean) as { label: string; value: number }[];
+
+    setSheetAccount({
+      name: item.name,
+      subtitle: item.institution || CAT[catKey].label,
+      icon: CAT[catKey].icon,
+      color: CAT[catKey].color,
+      value: Number(item.amount || 0),
+      isLiability: true,
+      interestRate: item.interestRate ?? undefined,
+      paymentAmount: item.paymentAmount ?? undefined,
+      history,
+    });
+  }
+
+  const MN = {
+    card:   '#172554',
+    border: 'rgba(255,255,255,0.08)',
+    text:   '#ffffff',
+    muted:  'rgba(255,255,255,0.55)',
+    faint:  'rgba(255,255,255,0.35)',
+    green:  '#34D399',
+    red:    '#F87171',
+    gold:   '#2ED3C6',
+  };
+  const changeColor = debtDown ? MN.green : MN.red;
+  const changeBg    = debtDown ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)';
+
+  const [y, m] = selectedMonthKey.split('-').map(Number);
+  const selectedDate = new Date(y, (m || 1) - 1, 1);
+
+  return (
+    <div style={{ fontFamily: 'var(--font-body)', color: MN.text, paddingBottom: 16 }}>
+
+      {/* Hero */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '20px 20px 16px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>Total Debt</div>
+        <div style={{
+          fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+          backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>{fmt(totalDebt)}</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 100, background: changeBg, border: `1px solid ${changeColor}40`, fontSize: 12, fontWeight: 700, color: changeColor }}>
+          {debtDown ? '▼' : '▲'} {fmt(Math.abs(debtChange))} ({Math.abs(debtChangePct).toFixed(1)}%)
+          <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>{debtDown ? 'paid down' : 'increase'}</span>
+        </div>
+
+        {/* scrubbable trendline */}
+        {trendData.length > 1 && (
+          <MobileScrubChart height={104}
+            data={trendData.map(d => ({ label: d.label, value: d.liabilities }))}
+            formatValue={v => fmt(v)}
+            color={MN.red}
+          />
+        )}
+
+        {/* month pills — extension of the hero, no separate row above */}
+        <MobileMonthStrip
+          currentDate={selectedDate}
+          onChange={(d) => setSelectedMonthKey(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)}
+          variant="hero"
+        />
+      </div>
+
+      {/* Category tiles — one row, slide to see more */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, overflowX: 'auto', paddingBottom: 2, WebkitOverflowScrolling: 'touch' }}>
+        {(Object.keys(CAT) as string[]).filter(k => totals[k] > 0).map(k => (
+          <div key={k} style={{ background: MN.card, borderRadius: 14, padding: '14px 16px', border: `1px solid ${MN.border}`, flex: '0 0 auto', width: 132 }}>
+            <div style={{ fontSize: 18, marginBottom: 6 }}>{CAT[k].icon}</div>
+            <div style={{ fontSize: 10, color: MN.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{CAT[k].label}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: MN.text }}>{fmtK(totals[k])}</div>
+            <div style={{ marginTop: 6, height: 3, borderRadius: 100, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${totalDebt > 0 ? (totals[k] / totalDebt) * 100 : 0}%`, background: CAT[k].color, borderRadius: 100 }} />
+            </div>
+            <div style={{ fontSize: 10, color: MN.faint, marginTop: 3 }}>{totalDebt > 0 ? ((totals[k] / totalDebt) * 100).toFixed(0) : 0}% of total</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Account groups */}
+      {(Object.keys(CAT) as string[]).filter(k => (liabilities[k]?.length ?? 0) > 0).map(k => {
+        const open = expanded[k] !== false;
+        const items: LiabilityItem[] = liabilities[k];
+        return (
+          <div key={k} style={{ marginBottom: 12 }}>
+            <button onClick={() => toggle(k)} style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 16px', background: MN.card, borderRadius: open ? '14px 14px 0 0' : 14,
+              border: `1px solid ${MN.border}`, borderBottom: `1px solid ${MN.border}`,
+              cursor: 'pointer',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${CAT[k].color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{CAT[k].icon}</div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: MN.text }}>{CAT[k].label}</div>
+                  <div style={{ fontSize: 12, color: MN.muted }}>{items.length} account{items.length !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: MN.text }}>{fmtK(totals[k])}</div>
+                <div style={{ fontSize: 11, color: MN.gold, fontWeight: 600 }}>{open ? '▲' : '▼'}</div>
+              </div>
+            </button>
+            {open && (
+              <div style={{ background: MN.card, borderRadius: '0 0 14px 14px', border: `1px solid ${MN.border}`, borderTop: 'none', overflow: 'hidden' }}>
+                {items.map((item, i) => (
+                  <div key={item.id || i} onClick={() => openLiabilitySheet(item, k)} style={{ padding: '13px 16px', cursor: 'pointer', borderBottom: i < items.length - 1 ? `1px solid ${MN.border}` : 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: item.interestRate ? 6 : 0 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: MN.text }}>{item.name}</div>
+                        {item.institution && <div style={{ fontSize: 11, color: MN.faint }}>{item.institution}</div>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums' }}>{fmt(item.amount)}</div>
+                        <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+                      </div>
+                    </div>
+                    {item.interestRate && (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                        <span style={{ fontSize: 11, background: `${CAT[k].color}25`, color: MN.text, padding: '2px 8px', borderRadius: 100, fontWeight: 600 }}>{pct(item.interestRate)} APR</span>
+                        {item.paymentAmount && <span style={{ fontSize: 11, background: 'rgba(255,255,255,0.08)', color: MN.muted, padding: '2px 8px', borderRadius: 100, fontWeight: 600 }}>{fmt(item.paymentAmount)}/mo</span>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Add button */}
+      <button onClick={onAdd} style={{
+        width: '100%', padding: '15px', borderRadius: 14, marginTop: 8,
+        background: 'linear-gradient(135deg, #0a3fa8, #4DA3FF)',
+        border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+        cursor: 'pointer', boxShadow: '0 4px 16px rgba(10,63,168,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      }}>
+        <span style={{ fontSize: 20 }}>+</span> Add Liability
+      </button>
+
+      {/* Account detail bottom sheet */}
+      <MobileAccountSheet account={sheetAccount} onClose={() => setSheetAccount(null)} />
+    </div>
+  );
+}
+
 export default function LiabilitiesPage() {
-  const { currentSnapshot, priorMonthSnapshot, trendData, periodType, allSnapshots, availableMonths, deleteManualLiability } = useFinancialData();
+  const { currentSnapshot, priorMonthSnapshot, trendData, periodType, allSnapshots, availableMonths, deleteManualLiability, selectedMonthKey, setSelectedMonthKey } = useFinancialData();
   const { T } = useDashboardTheme();
+  const isMobile = useMobile();
   const [expanded,   setExpanded]   = useState<Record<string, boolean>>({});
   const [showModal,  setShowModal]  = useState(false);
   const [editTarget, setEditTarget] = useState<LiabilityInitial | null>(null);
@@ -202,6 +403,27 @@ export default function LiabilitiesPage() {
   const highestRate = allItems
     .filter(i => i.interestRate)
     .sort((a, b) => (b.interestRate ?? 0) - (a.interestRate ?? 0))[0];
+
+  if (isMobile) return (
+    <>
+      {showModal && <AddLiabilityModal initial={editTarget ?? undefined} onClose={() => { setShowModal(false); setEditTarget(null); }} />}
+      <MobileLiabilitiesView
+        liabilities={liabilities}
+        totals={totals}
+        totalDebt={totalDebt}
+        debtChange={debtChange}
+        debtChangePct={debtChangePct}
+        debtDown={debtDown}
+        CAT={CAT}
+        onAdd={() => setShowModal(true)}
+        allSnapshots={allSnapshots}
+        availableMonths={availableMonths}
+        selectedMonthKey={selectedMonthKey}
+        setSelectedMonthKey={setSelectedMonthKey}
+        trendData={trendData}
+      />
+    </>
+  );
 
   return (
     <div style={{ color: C.text, fontFamily: 'var(--font-body)' }}>

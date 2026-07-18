@@ -124,6 +124,33 @@ const fmtDate = (d: Date): string =>
 /* ─────────────────────────────────────────────────────────────
    SHARED UI
 ───────────────────────────────────────────────────────────── */
+import MobileScrubChart from '../../components/finance/MobileScrubChart';
+
+/* ── mobile design system ── */
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
 function SectionHeader({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ marginBottom: 18 }}>
@@ -717,6 +744,7 @@ function SurplusRouting({ monthlySurplus, cashBalance, monthlyExpenses, liabilit
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 export default function ForecastPage() {
+  const isMobile = useMobile();
   const { currentSnapshot }                                                = useWealthData();
   const { incomeAnalytics, expenseAnalytics, recurringTransactions, loading } = useFlowData();
 
@@ -846,6 +874,121 @@ export default function ForecastPage() {
     { label: '12 Months', value: 12 },
     { label: '24 Months', value: 24 },
   ];
+
+  /* ── MOBILE VIEW ── */
+  if (isMobile) {
+    const growing = projected12mo >= currentCash;
+    const runwayColor = cashRunwayMonths >= 6 ? MN.green : cashRunwayMonths >= 3 ? MN.amber : MN.red;
+
+    return (
+      <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+        {/* HERO — projected cash */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+          borderRadius: 20, padding: '24px 20px 18px', marginBottom: 16,
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+            Projected Cash · {flowHorizon} Months
+          </div>
+          <div style={{
+            fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+            backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${growing ? MN.gold : MN.red} 100%)`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            {fmtShort(cashPositionData[cashPositionData.length - 1]?.balance ?? currentCash)}
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: growing ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+            border: `1px solid ${growing ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
+            borderRadius: 100, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+            color: growing ? MN.green : MN.red,
+          }}>
+            {monthlySurplus >= 0 ? '▲' : '▼'} {fmtShort(Math.abs(monthlySurplus))}/mo
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>{monthlySurplus >= 0 ? 'surplus' : 'deficit'}</span>
+          </div>
+
+          {/* scrubbable sparkline */}
+          <MobileScrubChart height={104}
+            data={cashPositionData.map(d => ({ label: d.label, value: d.balance }))}
+            formatValue={v => fmtShort(v)}
+          />
+        </div>
+
+        {/* HORIZON CHIPS */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {horizonTabs.map(({ label, value }) => {
+            const active = flowHorizon === value;
+            return (
+              <button key={value} onClick={() => setFlowHorizon(value)} style={{
+                flex: 1, padding: '9px 0', borderRadius: 100,
+                border: `1px solid ${active ? MN.gold : MN.border}`,
+                background: active ? 'rgba(46,211,198,0.15)' : MN.card,
+                color: active ? MN.gold : MN.muted,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', minHeight: 40,
+              }}>{label}</button>
+            );
+          })}
+        </div>
+
+        {/* STAT TILES */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {[
+            { label: 'Cash Now', value: fmtShort(currentCash), color: MN.gold },
+            { label: 'Runway',   value: cashRunwayMonths >= 100 ? '100+ mo' : `${cashRunwayMonths.toFixed(1)} mo`, color: runwayColor },
+            { label: 'Deficits', value: deficitMonths === 0 ? 'None' : `${deficitMonths} mo`, color: deficitMonths === 0 ? MN.green : MN.red },
+          ].map(s => (
+            <div key={s.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 12px' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* INSIGHTS */}
+        {insights.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {insights.map((text, i) => (
+              <div key={i} style={{
+                background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+                borderLeft: `3px solid ${MN.gold}`, padding: '11px 13px',
+                fontSize: 12, color: MN.muted, lineHeight: 1.55,
+              }}>
+                ✦ {text}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* UPCOMING BILLS */}
+        {upcomingBills.length > 0 && (
+          <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, marginBottom: 8 }}>Bills Next 60 Days</div>
+            {upcomingBills.map((bill: any, i: number) => (
+              <div key={`${bill.merchantKey}-${i}`} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '9px 0', borderBottom: i < upcomingBills.length - 1 ? `1px solid ${MN.border}` : 'none',
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bill.merchant}</div>
+                  <div style={{ fontSize: 11, color: bill.daysOut <= 3 ? MN.amber : MN.faint, fontWeight: bill.daysOut <= 3 ? 700 : 400, marginTop: 1 }}>
+                    {bill.daysOut === 0 ? 'Today' : bill.daysOut === 1 ? 'Tomorrow' : `in ${bill.daysOut} days`}
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums', flexShrink: 0, marginLeft: 12 }}>
+                  {fmt(bill.expectedAmount)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto' }}>

@@ -320,10 +320,44 @@ function SectionVisual({ section }: { section: typeof featureSections[0] }) {
 export default function FeaturesPage() {
   return (
     <main style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .features-section-grid {
+            grid-template-columns: 1fr !important;
+            gap: 40px !important;
+          }
+          .features-section-grid > div {
+            order: unset !important;
+          }
+          .features-feature-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .features-pain-grid {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .features-pain-arrow {
+            display: none !important;
+          }
+          .features-bigger-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .features-cta-box {
+            padding: 40px 24px !important;
+          }
+        }
+      `}</style>
       <Navbar />
 
       {/* ── HERO ── */}
-      <section style={{ paddingTop: 130, paddingBottom: 80, paddingLeft: '5vw', paddingRight: '5vw', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', paddingTop: 130, paddingBottom: 80, paddingLeft: '5vw', paddingRight: '5vw' }}>
+        {/* Background — full-width, contained to this section (overflow-hidden + cover) */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: "url('/Backround2.png')", backgroundSize: 'cover', backgroundPosition: 'center', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(7,17,31,0.45) 0%, rgba(7,17,31,0.25) 45%, rgba(7,17,31,0.6) 100%)' }} />
+        </div>
+
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 18px', borderRadius: 100, border: `1px solid rgba(46,211,198,0.25)`, background: 'rgba(46,211,198,0.08)', marginBottom: 28 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.gold, display: 'inline-block' }} />
           <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.gold }}>Your Personal Financial Advisor</span>
@@ -347,6 +381,7 @@ export default function FeaturesPage() {
             See pricing →
           </a>
         </div>
+        </div>
       </section>
 
       {/* ── PAIN → SOLUTION ── */}
@@ -359,12 +394,12 @@ export default function FeaturesPage() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {painPoints.map((p, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 48px 1fr', alignItems: 'center', gap: 16, padding: '18px 28px', borderRadius: 14, background: T.bg2, border: `1px solid ${T.border}` }}>
+            <div key={i} className="features-pain-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 48px 1fr', alignItems: 'center', gap: 16, padding: '18px 28px', borderRadius: 14, background: T.bg2, border: `1px solid ${T.border}` }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <span style={{ color: T.red, fontSize: '1rem', flexShrink: 0, marginTop: 2 }}>✕</span>
                 <span style={{ fontSize: '0.9rem', color: T.muted, lineHeight: 1.5 }}>{p.bad}</span>
               </div>
-              <div style={{ textAlign: 'center', fontSize: '1.2rem', color: T.gold }}>→</div>
+              <div className="features-pain-arrow" style={{ textAlign: 'center', fontSize: '1.2rem', color: T.gold }}>→</div>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <span style={{ color: T.green, fontSize: '1rem', flexShrink: 0, marginTop: 2 }}>✓</span>
                 <span style={{ fontSize: '0.9rem', color: T.text, fontWeight: 500, lineHeight: 1.5 }}>{p.good}</span>
@@ -377,7 +412,7 @@ export default function FeaturesPage() {
       {/* ── FEATURE SECTIONS ── */}
       {featureSections.map((section, si) => (
         <section key={section.eyebrow} style={{ padding: '80px 5vw', background: si % 2 === 1 ? T.bg2 : T.bg, borderTop: `1px solid ${T.border}` }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <div className="features-section-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
 
             {/* Text — alternate sides */}
             <div style={{ order: si % 2 === 0 ? 0 : 1 }}>
@@ -390,7 +425,7 @@ export default function FeaturesPage() {
               <p style={{ fontSize: '1rem', color: T.muted, lineHeight: 1.75, marginBottom: 36 }}>
                 {section.sub}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+              <div className="features-feature-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                 {section.features.map(f => (
                   <div key={f.title}>
                     <div style={{ fontSize: '1.3rem', marginBottom: 8 }}>{f.icon}</div>
@@ -425,7 +460,7 @@ export default function FeaturesPage() {
             Nautilus Money exists to fix that — giving every household the same financial intelligence that used to cost hundreds of dollars an hour.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div className="features-bigger-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {[
               {
                 icon: (
@@ -480,7 +515,7 @@ export default function FeaturesPage() {
 
       {/* ── FINAL CTA ── */}
       <section style={{ padding: '80px 5vw 120px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '60px 40px', borderRadius: 24, background: 'linear-gradient(135deg, #0a2d5e 0%, #0D1E30 100%)', border: `1px solid rgba(46,211,198,0.2)`, boxShadow: '0 0 80px rgba(46,211,198,0.05)' }}>
+        <div className="features-cta-box" style={{ maxWidth: 680, margin: '0 auto', padding: '60px 40px', borderRadius: 24, background: 'linear-gradient(135deg, #0a2d5e 0%, #0D1E30 100%)', border: `1px solid rgba(46,211,198,0.2)`, boxShadow: '0 0 80px rgba(46,211,198,0.05)' }}>
           <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 14 }}>
             Find out your Nautilus Score.
           </h2>

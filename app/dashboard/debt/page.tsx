@@ -320,7 +320,35 @@ const DEBT_EMOJI_MAP: Record<string, string> = {
   other:       '📋',
 };
 
+import MobileScrubChart from '../../components/finance/MobileScrubChart';
+
+/* ── mobile design system ── */
+function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
 export default function DebtPayoffPage() {
+  const isMobile = useMobile();
   const { currentSnapshot } = useFinancialData();
   const { T } = useDashboardTheme();
   const chartColor = T.isDark ? '#2ED3C6' : '#0a3fa8';
@@ -476,6 +504,170 @@ export default function DebtPayoffPage() {
       </a>
     </div>
   );
+
+  /* ── MOBILE VIEW ── */
+  if (isMobile) {
+    const STRATS: { id: Strategy; icon: string; label: string }[] = [
+      { id: 'avalanche', icon: '🔥', label: 'Avalanche' },
+      { id: 'snowball',  icon: '⛄', label: 'Snowball' },
+      { id: 'minimum',   icon: '🐢', label: 'Minimums' },
+    ];
+
+    return (
+      <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+        {/* HERO */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+          borderRadius: 20, padding: '24px 20px 18px', marginBottom: 16,
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+            Total Debt
+          </div>
+          <div style={{
+            fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+            backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            {fmt(totalDebtBal)}
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'rgba(46,211,198,0.15)', border: '1px solid rgba(46,211,198,0.35)',
+            borderRadius: 100, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: MN.gold,
+          }}>
+            Debt-free {current.payoffDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>· {moLabel(current.monthsToPayoff)} away</span>
+          </div>
+
+          {/* scrubbable balance decline sparkline */}
+          <MobileScrubChart height={104}
+            data={chartData.map(d => ({ label: d.label, value: d.total }))}
+            formatValue={v => fmt(v)}
+          />
+        </div>
+
+        {/* STAT TILES */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {[
+            { label: 'Total Interest', value: fmt(current.totalInterest), sub: 'at current plan', color: MN.amber },
+            { label: 'Interest Saved', value: fmt(interestSaved), sub: `${moLabel(monthsSaved)} sooner vs minimums`, color: MN.green },
+          ].map(s => (
+            <div key={s.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 12px' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: MN.faint, marginTop: 3 }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* STRATEGY CHIPS */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          {STRATS.map(s => {
+            const active = strategy === s.id;
+            return (
+              <button key={s.id} onClick={() => setStrategy(s.id)} style={{
+                flex: 1, padding: '10px 0', borderRadius: 12,
+                border: `1px solid ${active ? MN.gold : MN.border}`,
+                background: active ? 'rgba(46,211,198,0.15)' : MN.card,
+                color: active ? MN.gold : MN.muted,
+                fontSize: 12.5, fontWeight: 700, cursor: 'pointer', minHeight: 44,
+              }}>{s.icon} {s.label}</button>
+            );
+          })}
+        </div>
+
+        {/* EXTRA PAYMENT SLIDER */}
+        {strategy !== 'minimum' && (
+          <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>Extra Monthly Payment</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: MN.gold, fontVariantNumeric: 'tabular-nums' }}>{fmt(extra)}/mo</div>
+            </div>
+            <input
+              type="range" min={0} max={2000} step={25} value={extra}
+              onChange={e => setExtra(Number(e.target.value))}
+              style={{ width: '100%', accentColor: '#2ED3C6', height: 28 }}
+            />
+            <div style={{ fontSize: 10, color: MN.faint, marginTop: 4 }}>On top of {fmt(totalMinPayment)}/mo in minimums</div>
+          </div>
+        )}
+
+        {/* THIS MONTH'S PLAN */}
+        {actionPlan && (
+          <div style={{ background: MN.card, borderRadius: 16, border: `1px solid rgba(46,211,198,0.3)`, padding: '15px 14px', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: MN.gold, marginBottom: 6 }}>
+              {strategy === 'avalanche' ? '🔥' : '⛄'} This Month's Plan
+            </div>
+            <div style={{ fontSize: 12, color: MN.muted, lineHeight: 1.55, marginBottom: 10 }}>
+              Pay all minimums, then put your extra <strong style={{ color: MN.text }}>{fmt(extra)}</strong> toward{' '}
+              <strong style={{ color: MN.gold }}>{actionPlan.targetEmoji} {actionPlan.targetName}</strong>
+              {strategy === 'avalanche' ? ' (highest rate)' : ' (smallest balance)'}.
+            </div>
+            {actionPlan.payments.map((d: any) => (
+              <div key={d.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '8px 10px', borderRadius: 10, marginBottom: 4,
+                background: d.isTarget ? 'rgba(46,211,198,0.1)' : 'transparent',
+              }}>
+                <span style={{ fontSize: 13, color: MN.text, fontWeight: d.isTarget ? 700 : 400 }}>{d.emoji} {d.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: d.isTarget ? MN.gold : MN.muted, fontVariantNumeric: 'tabular-nums' }}>{fmt(d.thisMonth)}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: `1px solid ${MN.border}` }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: MN.muted }}>Total / month</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: MN.gold, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalMinPayment + extra)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* PAYOFF ORDER */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Payoff Order</div>
+        <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, overflow: 'hidden', marginBottom: 16 }}>
+          {[...current.debtPayoffOrder.map(id => debts.find(x => x.id === id)).filter(Boolean) as Debt[],
+            ...debts.filter(d => !current.debtPayoffOrder.includes(d.id))].map((d, i, arr) => (
+            <div key={d.id} style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+              borderBottom: i < arr.length - 1 ? `1px solid ${MN.border}` : 'none',
+            }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                background: 'rgba(46,211,198,0.15)', border: `1px solid rgba(46,211,198,0.35)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 800, color: MN.gold,
+              }}>{i + 1}</div>
+              <div style={{ fontSize: 18, flexShrink: 0 }}>{d.emoji}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                <div style={{ fontSize: 11, color: MN.faint, marginTop: 1 }}>{d.interestRate}% APR · paid off in {moLabel(debtPayoffMonths[d.id] ?? 0)}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(d.currentBalance)}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* STRATEGY COMPARISON */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 2px 8px' }}>Strategy Comparison</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          {comparison.map(c => {
+            const cColor = c.label.includes('Avalanche') ? MN.green : c.label.includes('Snowball') ? MN.amber : MN.red;
+            return (
+              <div key={c.label} style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 10px' }}>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: MN.muted, marginBottom: 5 }}>
+                  {c.label.replace(' Method', '').replace(' Only', '')}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: cColor }}>{moLabel(c.months)}</div>
+                <div style={{ fontSize: 10, color: MN.faint, marginTop: 3 }}>{fmtK(c.interest)} interest</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>

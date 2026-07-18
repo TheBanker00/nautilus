@@ -54,6 +54,286 @@ const T = {
   radiusMd:      '8px',
 };
 
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+/* ── mobile design tokens — shared with transactions/accounts mobile views ── */
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+function MobileScoreRing({ score, color, size = 108 }: { score: number; color: string; size?: number }) {
+  const R = (size - 14) / 2;
+  const circ = 2 * Math.PI * R;
+  const dash = (Math.min(100, Math.max(0, score)) / 100) * circ;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={9} />
+      <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke={color} strokeWidth={9}
+        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: 'stroke-dasharray 0.8s ease' }} />
+      <text x="50%" y="47%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.28} fontWeight={800} fill="#ffffff">{score}</text>
+      <text x="50%" y="65%" textAnchor="middle" fontSize={size * 0.09} fontWeight={600} fill="rgba(255,255,255,0.5)">of 100</text>
+    </svg>
+  );
+}
+
+function MobileDashboardView({
+  displayScore, healthGrade, healthLabel,
+  netWorth, totalAssets, totalLiabilities, totalCash,
+  netCashFlow, liquidityMonths, mtdSpent, mtdIncome,
+  totalBudgeted, upcomingBills, txns, alerts,
+}: any) {
+  const scoreColor = displayScore >= 70 ? MN.green : displayScore >= 50 ? MN.gold : displayScore >= 40 ? MN.amber : MN.red;
+  const pctile = displayScore >= 92 ? 3 : displayScore >= 87 ? 8 : displayScore >= 82 ? 16 : displayScore >= 76 ? 27 : displayScore >= 70 ? 38 : displayScore >= 63 ? 50 : displayScore >= 55 ? 63 : displayScore >= 45 ? 75 : displayScore >= 35 ? 85 : 93;
+
+  const topAlert = (alerts ?? [])[0];
+
+  /* recent transactions — last 5 */
+  const recent = (txns ?? [])
+    .filter((t: any) => t.date)
+    .sort((a: any, b: any) => (b.date ?? '').localeCompare(a.date ?? ''))
+    .slice(0, 5);
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* ── HERO — score + net worth ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '24px 20px 20px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Link href="/dashboard/health" style={{ textDecoration: 'none', flexShrink: 0 }}>
+            <MobileScoreRing score={displayScore} color={scoreColor} />
+          </Link>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 3 }}>
+              Nautilus Score
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: scoreColor }}>{healthGrade}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: MN.text }}>{healthLabel}</span>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 3 }}>
+              Net Worth
+            </div>
+            <div style={{
+              fontSize: 28, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em',
+              backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${MN.gold} 100%)`,
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+            }}>
+              {netWorth < 0 ? '-' : ''}{fmt(Math.abs(netWorth), true)}
+            </div>
+            <div style={{ fontSize: 11, color: MN.faint, marginTop: 5 }}>Top {pctile}% of Nautilus users</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── TODAY'S PRIORITY ── */}
+      {topAlert && (
+        <Link href="/dashboard/ai-insights" style={{ textDecoration: 'none' }}>
+          <div style={{
+            background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+            borderLeft: `3px solid ${topAlert.level === 'danger' ? MN.red : topAlert.level === 'warning' ? MN.amber : MN.gold}`,
+            padding: '13px 14px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ fontSize: 20, flexShrink: 0 }}>✦</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.gold, marginBottom: 3 }}>Today's Priority</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: MN.text, lineHeight: 1.4 }}>{topAlert.text}</div>
+            </div>
+            <div style={{ color: MN.muted, fontSize: 16, flexShrink: 0 }}>›</div>
+          </div>
+        </Link>
+      )}
+
+      {/* ── STAT TILES — each is a deep link ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Cash', value: fmt(totalCash, true), color: MN.gold, href: '/dashboard/net-worth/assets' },
+          { label: 'Assets', value: fmt(totalAssets, true), color: MN.green, href: '/dashboard/net-worth/assets' },
+          { label: 'Liabilities', value: fmt(totalLiabilities, true), color: MN.red, href: '/dashboard/net-worth/liabilities' },
+        ].map(s => (
+          <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
+            <div style={{ background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`, padding: '12px 12px' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: MN.muted, marginBottom: 5 }}>{s.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ── MTD SPEND VS INCOME — whole card links to Cash Flow ── */}
+      <Link href="/dashboard/cashflow" style={{ textDecoration: 'none' }}>
+      <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>This Month</div>
+          <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+        </div>
+        {[
+          { label: 'Income', value: mtdIncome, color: MN.green },
+          { label: 'Spent',  value: mtdSpent,  color: MN.red },
+        ].map(row => {
+          const max = Math.max(mtdIncome, mtdSpent, 1);
+          return (
+            <div key={row.label} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: MN.muted }}>{row.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: row.color, fontVariantNumeric: 'tabular-nums' }}>{fmt(row.value)}</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                <div style={{ height: 6, borderRadius: 3, width: `${(row.value / max) * 100}%`, background: row.color, transition: 'width 0.6s ease' }} />
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: `1px solid ${MN.border}` }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: MN.muted }}>Saved so far</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: mtdIncome - mtdSpent >= 0 ? MN.green : MN.red, fontVariantNumeric: 'tabular-nums' }}>
+            {mtdIncome - mtdSpent < 0 ? '-' : '+'}{fmt(Math.abs(mtdIncome - mtdSpent))}
+          </span>
+        </div>
+      </div>
+      </Link>
+
+      {/* ── BUDGET — left to spend, whole card links to Budget ── */}
+      <Link href="/dashboard/budget" style={{ textDecoration: 'none' }}>
+        <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px', marginBottom: 16 }}>
+          {totalBudgeted > 0 ? (() => {
+            const remaining = totalBudgeted - mtdSpent;
+            const pct = Math.min(110, (mtdSpent / totalBudgeted) * 100);
+            const barColor = pct >= 100 ? MN.red : pct >= 85 ? MN.amber : MN.gold;
+            return (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>Budget</div>
+                  <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: remaining >= 0 ? MN.green : MN.red, fontVariantNumeric: 'tabular-nums' }}>
+                    {remaining < 0 ? '-' : ''}{fmt(Math.abs(remaining))}
+                  </span>
+                  <span style={{ fontSize: 12, color: MN.muted }}>{remaining >= 0 ? 'left to spend this month' : 'over budget'}</span>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', marginBottom: 6 }}>
+                  <div style={{ height: 8, borderRadius: 4, width: `${Math.min(100, pct)}%`, background: barColor, transition: 'width 0.8s ease' }} />
+                </div>
+                <div style={{ fontSize: 11, color: MN.faint }}>
+                  {fmt(mtdSpent)} of {fmt(totalBudgeted)} used ({Math.round(pct)}%)
+                </div>
+              </>
+            );
+          })() : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontSize: 20, flexShrink: 0 }}>💸</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, marginBottom: 2 }}>Set up your budget</div>
+                <div style={{ fontSize: 11, color: MN.faint }}>Track spending against monthly limits</div>
+              </div>
+              <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* ── UPCOMING BILLS — whole card links to Recurring ── */}
+      {upcomingBills.length > 0 && (
+        <Link href="/dashboard/recurring" style={{ textDecoration: 'none' }}>
+        <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>Bills Next 14 Days</div>
+            <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+          </div>
+          {upcomingBills.slice(0, 4).map((bill: any, i: number) => {
+            const dueDate = new Date(bill.nextExpectedDate!);
+            const daysOut = Math.round((dueDate.getTime() - today.getTime()) / 86_400_000);
+            const urgent = daysOut <= 3;
+            return (
+              <div key={bill.merchantKey} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '9px 0', borderBottom: i < Math.min(upcomingBills.length, 4) - 1 ? `1px solid ${MN.border}` : 'none',
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bill.merchant}</div>
+                  <div style={{ fontSize: 11, color: urgent ? MN.amber : MN.faint, fontWeight: urgent ? 700 : 400, marginTop: 1 }}>
+                    {daysOut === 0 ? 'Today' : daysOut === 1 ? 'Tomorrow' : `in ${daysOut} days`}
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: MN.text, fontVariantNumeric: 'tabular-nums', flexShrink: 0, marginLeft: 12 }}>
+                  {fmt(bill.expectedAmount)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </Link>
+      )}
+
+      {/* ── RECENT TRANSACTIONS — whole card links to Cash Flow ── */}
+      <Link href="/dashboard/cashflow" style={{ textDecoration: 'none' }}>
+      <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '15px 14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: MN.text }}>Recent Activity</div>
+          <span style={{ color: MN.faint, fontSize: 15 }}>›</span>
+        </div>
+        {recent.length === 0 ? (
+          <div style={{ fontSize: 12, color: MN.faint, textAlign: 'center', padding: '14px 0' }}>No recent transactions</div>
+        ) : recent.map((t: any, i: number) => {
+          const isIncome = t.transaction_type === 'Income';
+          return (
+            <div key={t.id ?? i} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 0', borderBottom: i < recent.length - 1 ? `1px solid ${MN.border}` : 'none',
+            }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                background: 'rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden', fontSize: 14,
+              }}>
+                {t.logo
+                  ? <img src={t.logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : getTxEmoji(t.subcategory, t.category)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: MN.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant || 'Transaction'}</div>
+                <div style={{ fontSize: 11, color: MN.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.category || '—'}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: isIncome ? MN.green : MN.text, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                {isIncome ? '+' : '-'}{fmt(Math.abs(t.amount ?? 0))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      </Link>
+    </div>
+  );
+}
+
 function AccentLine() {
   const { T: TH } = useDashboardTheme();
   return (
@@ -233,6 +513,7 @@ function SubScoreBar({ label, score, color }: { label: string; score: number; co
    MAIN PAGE
 ───────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
+  const isMobile = useMobile();
   const { T: TH } = useDashboardTheme();
   const headingColor = TH.isDark ? '#2ED3C6' : '#0a3fa8';
   const { currentSnapshot, refetch: refetchWealth } = useWealthData();
@@ -476,6 +757,29 @@ export default function DashboardPage() {
           />
         </div>
       </div>
+    );
+  }
+
+  /* ── MOBILE BRANCH ── */
+  if (isMobile) {
+    return (
+      <MobileDashboardView
+        displayScore={displayScore}
+        healthGrade={healthGrade}
+        healthLabel={healthLabel}
+        netWorth={netWorth}
+        totalAssets={totalAssets}
+        totalLiabilities={totalLiabilities}
+        totalCash={totalCash}
+        netCashFlow={netCashFlow}
+        liquidityMonths={liquidityMonths}
+        mtdSpent={mtdSpent}
+        mtdIncome={mtdIncome}
+        totalBudgeted={totalBudgeted}
+        upcomingBills={upcomingBills}
+        txns={txns}
+        alerts={alerts}
+      />
     );
   }
 

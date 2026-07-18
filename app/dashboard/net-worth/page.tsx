@@ -19,10 +19,24 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { useFinancialData, type TrendPoint } from '../../lib/financialdatacontext';
+import MobileScrubChart from '../../components/finance/MobileScrubChart';
+import MobileMonthStrip from '../../components/finance/MobileMonthStrip';
 import { useFinancialData as useFlowData } from '../../lib/hooks/usefinancialdata';
 import { useDashboardTheme } from '../../lib/dashboardthemecontext';
 import { useUserProfile } from '../../lib/hooks/useuserprofile';
 import { getDALabel } from '../health/page';
+
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
 
 /* ─── brand accent constants (same in light + dark) ─── */
 const BRAND = {
@@ -37,8 +51,6 @@ const BRAND = {
 const fmt = (n: number) =>
   '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
-// Preserves the sign — use for headline/series values where negative net worth
-// must read as negative (fmt() above is for deltas already paired with a ▲/▼ arrow).
 const fmtSigned = (n: number) => (n < 0 ? '-' : '') + fmt(n);
 
 const fmtK = (n: number) => {
@@ -154,15 +166,275 @@ function Label({ children }: { children: React.ReactNode }) {
 
 type Range = '6M' | '1Y' | '2Y' | 'All';
 
+/* ══════════════════════════════════════════════════════
+   MOBILE VIEW
+══════════════════════════════════════════════════════ */
+function MobileNetWorthSummaryView({
+  netWorth, totalAssets, totalLiabilities,
+  nwChange, nwChangePct, nwUp,
+  priorAssets, priorLiabilities, periodType,
+  rangeChartData, trendData,
+  debtToAsset,
+  totalMortgage, totalCC, totalAuto, totalStudent, totalOtherL,
+  allocData,
+  selectedMonthKey, setSelectedMonthKey,
+}: {
+  netWorth: number; totalAssets: number; totalLiabilities: number;
+  nwChange: number; nwChangePct: number; nwUp: boolean;
+  priorAssets: number; priorLiabilities: number; periodType: string;
+  rangeChartData: TrendPoint[]; trendData: TrendPoint[];
+  debtToAsset: number;
+  totalMortgage: number; totalCC: number; totalAuto: number; totalStudent: number; totalOtherL: number;
+  allocData: { name: string; value: number; color: string }[];
+  selectedMonthKey: string;
+  setSelectedMonthKey: (key: string) => void;
+}) {
+  const N = { bg: '#0F2044', card: '#172554', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: 'rgba(255,255,255,0.55)' };
+
+  /* SVG bar chart — assets vs liabilities (last 8 months) */
+  const barData = rangeChartData.slice(-8);
+  const maxVal = Math.max(...barData.flatMap(d => [d.assets, d.liabilities]), 1);
+  const BAR_H = 120;
+  const SVG_W = Math.max(320, barData.length * 52);
+
+  /* SVG sparkline for wealth over time */
+  const sparkData = trendData.length > 1 ? trendData : rangeChartData;
+  const sparkMin = Math.min(...sparkData.map(d => d.netWorth));
+  const sparkMax = Math.max(...sparkData.map(d => d.netWorth));
+  const sparkRange = sparkMax - sparkMin || 1;
+  const SPARK_W = 320;
+  const SPARK_H = 80;
+
+  const sparkLinePath = sparkData.map((d, i) => {
+    const x = (i / Math.max(sparkData.length - 1, 1)) * SPARK_W;
+    const y = SPARK_H - ((d.netWorth - sparkMin) / sparkRange) * (SPARK_H - 8) - 4;
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const sparkAreaPath = sparkLinePath + ` L${SPARK_W},${SPARK_H} L0,${SPARK_H} Z`;
+
+  const isUp = nwChange >= 0;
+  const netWorthColor = netWorth >= 0 ? BRAND.green : BRAND.red;
+
+  const [smy, smm] = selectedMonthKey.split('-').map(Number);
+  const selectedDate = new Date(smy, (smm || 1) - 1, 1);
+
+  return (
+    <div style={{ color: N.text, fontFamily: 'var(--font-body)', padding: '0 0 16px' }}>
+
+      {/* ── HERO CARD ── */}
+      <div style={{
+        background: `linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)`,
+        borderRadius: 0,
+        padding: '20px 20px 16px',
+        margin: '-16px -16px 16px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(77,163,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(77,163,255,0.06) 1px, transparent 1px)`,
+          backgroundSize: '32px 32px',
+        }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${BRAND.gold}, ${BRAND.goldLight}, ${BRAND.gold}, transparent)` }} />
+
+        <div style={{ position: 'relative' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+            Total Net Worth · {selectedMonthKey}
+          </div>
+          <div style={{
+            fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 10,
+            backgroundImage: `linear-gradient(135deg, #ffffff 0%, ${BRAND.gold} 100%)`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          }}>
+            {fmtSigned(netWorth)}
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: isUp ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+            border: `1px solid ${isUp ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
+            borderRadius: 100, padding: '5px 12px',
+            fontSize: 13, fontWeight: 700, color: isUp ? BRAND.green : BRAND.red,
+          }}>
+            {isUp ? '▲' : '▼'} {fmt(nwChange)} ({nwChangePct >= 0 ? '+' : ''}{nwChangePct.toFixed(1)}%)
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 400, marginLeft: 4 }}>vs prior {periodType}</span>
+          </div>
+
+          {/* scrubbable trendline */}
+          {sparkData.length > 1 && (
+            <MobileScrubChart height={104}
+              data={sparkData.map(d => ({ label: d.label, value: d.netWorth }))}
+              formatValue={v => fmtSigned(v)}
+            />
+          )}
+
+          {/* month pills — extension of the hero, no separate row above */}
+          <MobileMonthStrip
+            currentDate={selectedDate}
+            onChange={(d) => setSelectedMonthKey(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)}
+            variant="hero"
+          />
+        </div>
+      </div>
+
+      {/* ── THREE STAT TILES ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Net Worth',   value: netWorth,         color: netWorthColor, icon: '◈' },
+          { label: 'Assets',      value: totalAssets,      color: BRAND.green,   icon: '📈' },
+          { label: 'Liabilities', value: totalLiabilities, color: BRAND.red,     icon: '📋' },
+        ].map(({ label, value, color, icon }) => (
+          <div key={label} style={{
+            background: N.card, borderRadius: 14,
+            border: `1px solid ${N.border}`, padding: '14px 12px',
+          }}>
+            <div style={{ fontSize: 16, marginBottom: 6 }}>{icon}</div>
+            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: N.muted, marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color, letterSpacing: '-0.02em', wordBreak: 'break-all' }}>{fmtK(value)}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── ASSETS VS LIABILITIES CHART ── */}
+      <div style={{ background: N.card, borderRadius: 16, border: `1px solid ${N.border}`, padding: '16px 14px', marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: N.text, marginBottom: 8 }}>Assets vs Liabilities</div>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Assets',      value: totalAssets,      color: BRAND.green },
+            { label: 'Liabilities', value: totalLiabilities, color: '#4DA3FF'   },
+            { label: 'Net Worth',   value: netWorth,         color: BRAND.gold  },
+          ].map(s => (
+            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 9, color: N.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{fmtK(s.value)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <svg width={SVG_W} height={BAR_H + 28} viewBox={`0 0 ${SVG_W} ${BAR_H + 28}`}>
+            {barData.map((d, i) => {
+              const groupW = SVG_W / barData.length;
+              const gx = i * groupW;
+              const bw = Math.min(16, groupW * 0.35);
+              const aH = (d.assets / maxVal) * BAR_H;
+              const lH = (d.liabilities / maxVal) * BAR_H;
+              return (
+                <g key={i}>
+                  <rect x={gx + groupW / 2 - bw - 2} y={BAR_H - aH} width={bw} height={Math.max(aH, 1)}
+                    fill={BRAND.green} rx={3} opacity={0.85} />
+                  <rect x={gx + groupW / 2 + 2} y={BAR_H - lH} width={bw} height={Math.max(lH, 1)}
+                    fill="#4DA3FF" rx={3} opacity={0.85} />
+                  <text x={gx + groupW / 2} y={BAR_H + 18} textAnchor="middle"
+                    fontSize={9} fill="rgba(255,255,255,0.45)" fontWeight={600}>
+                    {d.label}
+                  </text>
+                </g>
+              );
+            })}
+            <line x1={0} y1={BAR_H} x2={SVG_W} y2={BAR_H}
+              stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+          </svg>
+        </div>
+      </div>
+
+      {/* ── WEALTH OVER TIME ── */}
+      <div style={{ background: N.card, borderRadius: 16, border: `1px solid ${N.border}`, padding: '16px 14px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: N.text }}>Wealth Over Time</div>
+            <div style={{ fontSize: 11, color: N.muted, marginTop: 2 }}>Net worth trend</div>
+          </div>
+          {sparkData.length > 1 && (
+            <div style={{
+              fontSize: 13, fontWeight: 800,
+              color: (sparkData[sparkData.length - 1].netWorth) >= (sparkData[0].netWorth) ? BRAND.green : BRAND.red,
+            }}>
+              {((sparkData[sparkData.length - 1].netWorth - sparkData[0].netWorth) / Math.abs(sparkData[0].netWorth || 1) * 100).toFixed(1)}%
+            </div>
+          )}
+        </div>
+
+        {sparkData.length > 1 ? (
+          <MobileScrubChart height={104}
+            data={sparkData.map(d => ({ label: d.label, value: d.netWorth }))}
+            formatValue={v => fmtSigned(v)}
+          />
+        ) : (
+          <div style={{ color: N.muted, fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Not enough data yet</div>
+        )}
+      </div>
+
+      {/* ── ASSET ALLOCATION ── */}
+      {allocData.length > 0 && (
+        <div style={{ background: N.card, borderRadius: 16, border: `1px solid ${N.border}`, padding: '16px 14px', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: N.text, marginBottom: 12 }}>Asset Allocation</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {allocData.map(({ name, value, color }) => {
+              const pct = totalAssets > 0 ? (value / totalAssets) * 100 : 0;
+              return (
+                <div key={name}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: N.muted }}>{name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: N.text }}>{fmtK(value)}</span>
+                      <span style={{ fontSize: 11, color: N.muted, width: 36, textAlign: 'right' }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{ height: 6, borderRadius: 3, width: `${pct}%`, background: color, transition: 'width 0.8s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── QUICK NAV ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {[
+          { href: '/dashboard/net-worth/assets',      label: 'Assets',      sub: 'View all asset accounts', icon: '📊', color: BRAND.green },
+          { href: '/dashboard/net-worth/liabilities', label: 'Liabilities', sub: 'View all debts',          icon: '📋', color: BRAND.red   },
+        ].map(({ href, label, sub, icon, color }) => (
+          <Link key={href} href={href} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+            <div style={{
+              background: N.card, borderRadius: 14, border: `1px solid ${N.border}`,
+              padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 12,
+              height: '100%', boxSizing: 'border-box',
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                background: `${color}18`, border: `1px solid ${color}30`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+              }}>{icon}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: N.text }}>{label}</div>
+                <div style={{ fontSize: 11, color: N.muted }}>{sub}</div>
+              </div>
+              <div style={{ color: N.muted, fontSize: 16 }}>›</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function NetWorthPage() {
   const [chartRange, setChartRange] = useState<Range>('6M');
   const { T } = useDashboardTheme();
   const { profile: userProfile } = useUserProfile();
   const currentAge = userProfile?.age ?? 35;
   const chartAccent = T.isDark ? BRAND.gold : '#0a3fa8';
+  const isMobile = useMobile();
 
-  /* Merge brand accents + theme surfaces into a single C object
-     so all existing C.xxx references work without changes */
   const C = {
     ...BRAND,
     text:   T.text,
@@ -175,6 +447,7 @@ export default function NetWorthPage() {
     currentSnapshot,
     priorMonthSnapshot,
     selectedMonthKey,
+    setSelectedMonthKey,
     trendData,
     allSnapshots,
     availableMonths,
@@ -184,13 +457,11 @@ export default function NetWorthPage() {
   const { expenseAnalytics } = useFlowData();
   const avgMonthlyExpenses = expenseAnalytics?.averageMonthlyExpenses ?? 0;
 
-
   const snapshot = currentSnapshot;
   if (!snapshot) return null;
 
   const { bankAccounts, investmentAccounts, retirementAccounts, realEstate, otherAssets, liabilities } = snapshot;
 
-  /* ─── totals ─── */
   const sumF = (arr: any[], f: string) => arr.reduce((t, i) => t + Number(i[f] || 0), 0);
   const sumL = (arr?: any[]) => (arr || []).reduce((t, i) => t + (i.amount || 0), 0);
 
@@ -208,7 +479,6 @@ export default function NetWorthPage() {
   const totalLiabilities = totalMortgage + totalCC + totalAuto + totalStudent + totalOtherL;
   const netWorth         = totalAssets - totalLiabilities;
 
-  /* ─── prior period ─── */
   const prior = priorMonthSnapshot;
   const priorAssets = prior
     ? sumF(prior.bankAccounts, 'balance') + sumF(prior.investmentAccounts, 'balance') +
@@ -223,18 +493,16 @@ export default function NetWorthPage() {
   const nwChangePct     = priorNetWorth !== 0 ? (nwChange / Math.abs(priorNetWorth)) * 100 : 0;
   const nwUp            = nwChange >= 0;
 
-  /* ─── derived ratios ─── */
   const debtToAsset     = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
   const investRatio     = totalAssets > 0 ? ((totalInvest + totalRetire) / totalAssets) * 100 : 0;
 
-  /* ─── range-filtered chart data ─── */
   const rangeChartData = useMemo((): TrendPoint[] => {
     if (!availableMonths.length) return trendData;
 
     const sumA  = (s: any) => ['bankAccounts','investmentAccounts','retirementAccounts'].reduce((t: number, k: string) => t + (s[k]||[]).reduce((a: number, x: any) => a + Number(x.balance||0), 0), 0)
       + (s.realEstate||[]).reduce((a: number, x: any) => a + Number(x.value||0), 0)
       + (s.otherAssets||[]).reduce((a: number, x: any) => a + Number(x.value||0), 0);
-    const sumL  = (s: any) => Object.values(s.liabilities||{}).flat().reduce((a: number, x: any) => a + Number((x as any).amount||0), 0);
+    const sumLd  = (s: any) => Object.values(s.liabilities||{}).flat().reduce((a: number, x: any) => a + Number((x as any).amount||0), 0);
 
     const cutoff = (months: number) => {
       const d = new Date();
@@ -248,22 +516,19 @@ export default function NetWorthPage() {
                  : availableMonths[0];
 
     const months = availableMonths.filter(m => m >= minKey);
-
-    // thin out to max ~24 points so axis labels don't crowd
     const step   = Math.max(1, Math.floor(months.length / 24));
     const kept   = months.filter((_, i) => i % step === 0 || i === months.length - 1);
 
     return kept.map((m) => {
       const s     = allSnapshots[m];
       const assets = s ? sumA(s) : 0;
-      const liabilities = s ? sumL(s) : 0;
+      const liabilities = s ? sumLd(s) : 0;
       const [y, mo] = m.split('-').map(Number);
       const label = new Date(y, mo - 1).toLocaleString('en-US', { month: 'short', year: '2-digit' });
       return { label, monthKey: m, assets, liabilities, netWorth: assets - liabilities };
     });
   }, [chartRange, availableMonths, allSnapshots, trendData]);
 
-  /* ─── range summary stats ─── */
   const rangeFirst = rangeChartData[0];
   const rangeLast  = rangeChartData[rangeChartData.length - 1];
   const rangeDelta     = rangeLast && rangeFirst ? rangeLast.netWorth - rangeFirst.netWorth : 0;
@@ -272,7 +537,6 @@ export default function NetWorthPage() {
   const rangeDebtDelta  = rangeLast && rangeFirst ? rangeLast.liabilities - rangeFirst.liabilities : 0;
   const peakNetWorth   = rangeChartData.reduce((mx, p) => Math.max(mx, p.netWorth), -Infinity);
 
-  /* ─── allocation donut ─── */
   const ALLOC_COLORS = { cash: '#00A86B', investments: '#0891B2', retirement: '#2ED3C6', realEstate: '#0a3fa8', other: '#4da3ff' };
 
   const allocData = [
@@ -283,7 +547,6 @@ export default function NetWorthPage() {
     { name: 'Other',       value: totalOther,   color: ALLOC_COLORS.other },
   ].filter(d => d.value > 0);
 
-  /* ─── insights ─── */
   const insights: { icon: string; text: string; color: string }[] = [];
 
   const daInfo = getDALabel(debtToAsset / 100, currentAge);
@@ -300,6 +563,34 @@ export default function NetWorthPage() {
     insights.push({ icon: '✦', text: `Net worth grew ${nwChangePct.toFixed(1)}% this ${periodType} — compounding momentum building.`, color: C.gold });
 
   const periodLabel = periodType === 'month' ? 'Monthly' : periodType === 'quarter' ? 'Quarterly' : 'Yearly';
+
+  /* ── MOBILE BRANCH ── */
+  if (isMobile) {
+    return (
+      <MobileNetWorthSummaryView
+        netWorth={netWorth}
+        totalAssets={totalAssets}
+        totalLiabilities={totalLiabilities}
+        nwChange={nwChange}
+        nwChangePct={nwChangePct}
+        nwUp={nwUp}
+        priorAssets={priorAssets}
+        priorLiabilities={priorLiabilities}
+        periodType={periodType}
+        rangeChartData={rangeChartData}
+        trendData={trendData}
+        debtToAsset={debtToAsset}
+        totalMortgage={totalMortgage}
+        totalCC={totalCC}
+        totalAuto={totalAuto}
+        totalStudent={totalStudent}
+        totalOtherL={totalOtherL}
+        allocData={allocData}
+        selectedMonthKey={selectedMonthKey}
+        setSelectedMonthKey={setSelectedMonthKey}
+      />
+    );
+  }
 
   return (
     <div style={{ color: C.text, fontFamily: 'var(--font-body)' }}>
@@ -470,7 +761,6 @@ export default function NetWorthPage() {
             </div>
           </div>
 
-          {/* grouped bar chart — one group per month in range */}
           <div style={{
             borderRadius: 12,
             background: T.isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
@@ -507,7 +797,6 @@ export default function NetWorthPage() {
             <div style={{ fontSize: 18, fontWeight: 700, color: C.text }}>Portfolio Breakdown</div>
           </div>
 
-          {/* Chart — grows to fill space, centered */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px', minHeight: 0 }}>
             <div style={{ position: 'relative', width: '100%', height: 270 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -530,7 +819,6 @@ export default function NetWorthPage() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              {/* centre label */}
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{fmtK(totalAssets)}</div>
                 <div style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: 2 }}>Assets</div>
@@ -538,7 +826,6 @@ export default function NetWorthPage() {
             </div>
           </div>
 
-          {/* Legend — 2-col grid pinned to bottom */}
           <div style={{ borderTop: `1px solid ${C.border}`, padding: '16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px 8px', flexShrink: 0 }}>
             {allocData.map((d) => (
               <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
@@ -558,7 +845,6 @@ export default function NetWorthPage() {
       ═══════════════════════════════════════════════════ */}
       <Card style={{ padding: '28px 32px', marginBottom: 24 }}>
 
-        {/* header row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <Label>Net Worth Trend</Label>
@@ -580,7 +866,6 @@ export default function NetWorthPage() {
           </div>
         </div>
 
-        {/* range summary stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
           {[
             { label: 'Net Worth Change', value: `${rangeDelta >= 0 ? '+' : ''}${fmtK(rangeDelta)}`,         sub: `${rangeDeltaPct >= 0 ? '+' : ''}${rangeDeltaPct.toFixed(1)}% over period`, color: rangeDelta >= 0 ? C.green : C.red },
@@ -596,7 +881,6 @@ export default function NetWorthPage() {
           ))}
         </div>
 
-        {/* legend */}
         <div style={{ display: 'flex', gap: 20, fontSize: 12, marginBottom: 12 }}>
           {[
             { label: 'Net Worth',   color: chartAccent,  dash: false },
@@ -612,7 +896,6 @@ export default function NetWorthPage() {
           ))}
         </div>
 
-        {/* chart */}
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={rangeChartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
@@ -769,7 +1052,7 @@ export default function NetWorthPage() {
       </div>
 
       {/* ═══════════════════════════════════════════════════
-          ROW 5 — NAVIGATION TILES
+          ROW 6 — NAVIGATION TILES
       ═══════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {[

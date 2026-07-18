@@ -125,8 +125,9 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
   {
     keywords: ['contact', 'support', 'help', 'question', 'human', 'person', 'talk', 'email', 'reach'],
     response: {
-      text: "For support during our beta, you can reach us directly at support@nautilusmoney.com. We're a small team and respond quickly — usually within a few hours on weekdays.",
+      text: "You can reach our support team directly at support@nautilusmoney.com. We're a small team and respond quickly — usually within a few hours on weekdays.",
       chips: ['Pricing', 'How do I sign up?', 'What is Nautilus?'],
+      cta: { label: 'Email support →', href: 'mailto:support@nautilusmoney.com' },
     },
   },
   {
@@ -168,8 +169,9 @@ const RESPONSES: { keywords: string[]; response: BotResponse }[] = [
 ];
 
 const FALLBACK: BotResponse = {
-  text: "I'm not sure about that one — but here are the things I can help with:",
-  chips: ['What is Nautilus?', 'Pricing', 'Is my data safe?', 'What accounts are supported?'],
+  text: "I'm not programmed to answer that question. For further assistance, please contact our support team at support@nautilusmoney.com.",
+  chips: ['What is Nautilus?', 'Pricing', 'Is my data safe?', 'Contact support'],
+  cta: { label: 'Email support →', href: 'mailto:support@nautilusmoney.com' },
 };
 
 const GREETING: BotResponse = {

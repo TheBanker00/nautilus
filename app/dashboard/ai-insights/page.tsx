@@ -553,6 +553,184 @@ function generateInsights(
 }
 
 /* ─────────────────────────────────────────────────────────────
+   MOBILE VIEW — shared mobile design system
+───────────────────────────────────────────────────────────── */
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const MN = {
+  card:   '#172554',
+  border: 'rgba(255,255,255,0.08)',
+  text:   '#ffffff',
+  muted:  'rgba(255,255,255,0.55)',
+  faint:  'rgba(255,255,255,0.35)',
+  green:  '#34D399',
+  red:    '#F87171',
+  gold:   '#2ED3C6',
+  amber:  '#FBBF24',
+};
+
+const MN_SEVERITY: Record<InsightSeverity, { color: string; label: string }> = {
+  critical: { color: '#F87171', label: 'Action Required' },
+  warning:  { color: '#FBBF24', label: 'Heads Up' },
+  positive: { color: '#34D399', label: 'Looking Good' },
+  info:     { color: '#2ED3C6', label: 'Insight' },
+};
+
+function MobileInsightCard({ insight }: { insight: Insight }) {
+  const [expanded, setExpanded] = useState(false);
+  const s = MN_SEVERITY[insight.severity];
+  return (
+    <div style={{
+      background: MN.card, borderRadius: 14, border: `1px solid ${MN.border}`,
+      borderLeft: `3px solid ${s.color}`, padding: '13px 14px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 9, fontWeight: 800, color: s.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.label}</span>
+        <span style={{ fontSize: 10, color: MN.faint }}>{CATEGORY_META[insight.category].icon} {CATEGORY_META[insight.category].label}</span>
+        {insight.value && (
+          <span style={{ fontSize: 10, fontWeight: 800, color: MN.text, background: 'rgba(255,255,255,0.08)', padding: '1px 8px', borderRadius: 20, marginLeft: 'auto' }}>
+            {insight.value}
+          </span>
+        )}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: MN.text, marginBottom: 5, lineHeight: 1.35 }}>{insight.title}</div>
+      <div style={{
+        fontSize: 12.5, color: MN.muted, lineHeight: 1.6,
+        overflow: expanded ? 'visible' : 'hidden',
+        display: expanded ? 'block' : '-webkit-box',
+        WebkitLineClamp: expanded ? undefined : 2,
+        WebkitBoxOrient: 'vertical' as any,
+      }}>
+        {insight.body}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
+        {insight.body.length > 110 && (
+          <button onClick={() => setExpanded(e => !e)} style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            fontSize: 12, fontWeight: 700, color: MN.gold,
+          }}>
+            {expanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
+        {insight.action && insight.actionHref && (
+          <a href={insight.actionHref} style={{ fontSize: 12, fontWeight: 700, color: MN.gold, textDecoration: 'none' }}>
+            {insight.action} →
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileAIInsightsView({
+  insights, filtered, activeFilter, setActiveFilter, categoryCounts, hasTransactions,
+}: {
+  insights: Insight[]; filtered: Insight[];
+  activeFilter: InsightCategory | 'all';
+  setActiveFilter: (c: InsightCategory | 'all') => void;
+  categoryCounts: Record<string, number>;
+  hasTransactions: boolean;
+}) {
+  const critical  = insights.filter(i => i.severity === 'critical').length;
+  const warnings  = insights.filter(i => i.severity === 'warning').length;
+  const positives = insights.filter(i => i.severity === 'positive').length;
+
+  const statusColor = critical > 0 ? MN.red : warnings > 0 ? MN.amber : MN.green;
+  const statusLabel = critical > 0 ? 'Needs Your Attention' : warnings > 0 ? 'A Few Things to Review' : 'All Clear';
+
+  const allCategories: (InsightCategory | 'all')[] = ['all', 'spending', 'income', 'savings', 'subscriptions', 'anomalies', 'debt'];
+
+  return (
+    <div style={{ color: MN.text, fontFamily: 'var(--font-body)', paddingBottom: 16 }}>
+
+      {/* ── HERO — pulse ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0a3fa8 0%, #0F2044 100%)',
+        borderRadius: 0, padding: '24px 20px 20px', margin: '-16px -16px 16px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${MN.gold}, #67E6D5, ${MN.gold}, transparent)` }} />
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(46,211,198,0.75)', marginBottom: 6 }}>
+          AI Insights · Today
+        </div>
+        <div style={{ fontSize: 24, fontWeight: 800, color: statusColor, letterSpacing: '-0.02em', marginBottom: 14 }}>
+          {statusLabel}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          {[
+            { label: 'Issues',    count: critical,  color: MN.red },
+            { label: 'Warnings',  count: warnings,  color: MN.amber },
+            { label: 'Positives', count: positives, color: MN.green },
+          ].map(b => (
+            <div key={b.label} style={{
+              background: 'rgba(255,255,255,0.06)', borderRadius: 12,
+              border: `1px solid rgba(255,255,255,0.1)`, padding: '10px 8px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: b.color, lineHeight: 1 }}>{b.count}</div>
+              <div style={{ fontSize: 10, color: MN.muted, fontWeight: 600, marginTop: 4 }}>{b.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── FILTER CHIPS ── */}
+      {insights.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 14, paddingBottom: 2 }}>
+          {allCategories.map(cat => {
+            const count = cat === 'all' ? insights.length : (categoryCounts[cat] ?? 0);
+            if (cat !== 'all' && count === 0) return null;
+            const isActive = activeFilter === cat;
+            return (
+              <button key={cat} onClick={() => setActiveFilter(cat)} style={{
+                padding: '8px 14px', borderRadius: 100, whiteSpace: 'nowrap', flexShrink: 0,
+                border: `1px solid ${isActive ? MN.gold : MN.border}`,
+                background: isActive ? 'rgba(46,211,198,0.15)' : MN.card,
+                color: isActive ? MN.gold : MN.muted,
+                fontSize: 12.5, fontWeight: 700, cursor: 'pointer', minHeight: 36,
+              }}>
+                {cat === 'all' ? '✦ All' : `${CATEGORY_META[cat as InsightCategory].icon} ${CATEGORY_META[cat as InsightCategory].label}`} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── INSIGHTS ── */}
+      {filtered.length === 0 ? (
+        <div style={{ background: MN.card, borderRadius: 16, border: `1px solid ${MN.border}`, padding: '32px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>📊</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MN.text, marginBottom: 5 }}>
+            {!hasTransactions ? 'No transaction data yet' : 'No insights in this category'}
+          </div>
+          <div style={{ fontSize: 12, color: MN.muted }}>
+            {!hasTransactions
+              ? 'Connect your accounts to see personalized insights.'
+              : 'Try a different filter above.'}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map(insight => (
+            <MobileInsightCard key={insight.id} insight={insight} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    UI PRIMITIVES
 ───────────────────────────────────────────────────────────── */
 type TT = typeof T;
@@ -833,6 +1011,7 @@ function AIUpgradeBanner() {
    PAGE
 ───────────────────────────────────────────────────────────── */
 export default function AIInsightsPage() {
+  const isMobile = useMobile();
   const { isDark } = useDashboardTheme();
   const TT = isDark ? DARK_T : T;
   const { transactions, recurringTransactions, incomeAnalytics, expenseAnalytics, loading } = useFlowData();
@@ -892,6 +1071,20 @@ export default function AIInsightsPage() {
       Analyzing your financial data…
     </div>
   );
+
+  /* ── MOBILE BRANCH ── */
+  if (isMobile) {
+    return (
+      <MobileAIInsightsView
+        insights={insights}
+        filtered={filtered}
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        categoryCounts={categoryCounts}
+        hasTransactions={transactions.length > 0}
+      />
+    );
+  }
 
   return (
     <div style={{ background: TT.bg, minHeight: '100%' }}>

@@ -61,7 +61,7 @@ const features: { label: string; free: boolean | string; premium: boolean | stri
 const faqs = [
   {
     q: "What does the free plan actually include?",
-    a: "Free lets you manually enter transactions and track up to 3 accounts with basic budget categories. It's a genuine starting point — no expiring trial. When you're ready for automatic bank sync and the full feature set, upgrading takes 30 seconds.",
+    a: "The free plan is coming soon. When it launches, it will let you manually enter transactions and track up to 3 accounts with basic budget categories — a genuine starting point with no expiring trial. When you're ready for automatic bank sync and the full feature set, upgrading takes 30 seconds.",
   },
   {
     q: "How does bank connection work on Premium?",
@@ -101,22 +101,28 @@ export default function PricingPage() {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section style={{ paddingTop: 120, paddingBottom: 64, textAlign: 'center', paddingLeft: '5vw', paddingRight: '5vw' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', paddingTop: 120, paddingBottom: 64, textAlign: 'center', paddingLeft: '5vw', paddingRight: '5vw' }}>
+        {/* Background — full-width, contained to this section (overflow-hidden + cover) */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: "url('/Backround2.png')", backgroundSize: 'cover', backgroundPosition: 'center', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(7,17,31,0.45) 0%, rgba(7,17,31,0.25) 45%, rgba(7,17,31,0.6) 100%)' }} />
+        </div>
+
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 18px', borderRadius: 100, border: `1px solid rgba(46,211,198,0.25)`, background: 'rgba(46,211,198,0.08)', marginBottom: 24 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.gold, display: 'inline-block' }} />
           <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.gold }}>Simple Pricing</span>
         </div>
         <h1 style={{ fontSize: 'clamp(2.2rem, 4.5vw, 3.5rem)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 16 }}>
-          Start free. Lock in launch pricing<br />
-          <span style={{ color: T.gold }}>before it's gone.</span>
+          Founding-member pricing.<br />
+          <span style={{ color: T.gold }}>Half off, locked in.</span>
         </h1>
         <p style={{ fontSize: '1.05rem', color: T.muted, lineHeight: 1.75, maxWidth: 540, margin: '0 auto 16px' }}>
-          Premium is ${monthlyPrice}/mo during our launch — then ${monthlyRegular}/mo for everyone after the first 100,000 subscribers.
-          Lock in the lower rate forever by signing up now.
+          Founding members get Premium half off — ${monthlyPrice}/mo instead of ${monthlyRegular}. That rate is guaranteed for a minimum of 24 months, with no plans to change.
         </p>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', borderRadius: 100, background: 'rgba(46,211,198,0.1)', border: '1px solid rgba(46,211,198,0.3)', marginBottom: 28 }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.gold, display: 'inline-block', animation: 'pulse 2s infinite' }} />
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: T.gold }}>Launch pricing · First 100,000 subscribers only</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: T.gold }}>Founding-member pricing · Guaranteed 24 months</span>
         </div>
 
         {/* ── Billing toggle ── */}
@@ -143,6 +149,7 @@ export default function PricingPage() {
             </span>
           </button>
         </div>
+        </div>
       </section>
 
       {/* ── PLAN CARDS ── */}
@@ -151,7 +158,10 @@ export default function PricingPage() {
 
           {/* FREE */}
           <div style={{ background: T.bg2, borderRadius: 20, border: `1px solid ${T.border}`, padding: '36px 36px 32px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.muted, marginBottom: 12 }}>Free</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.muted }}>Free</span>
+              <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.accent, background: 'rgba(77,163,255,0.12)', border: '1px solid rgba(77,163,255,0.3)', borderRadius: 100, padding: '2px 8px' }}>Coming Soon</span>
+            </div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 6 }}>
               <span style={{ fontSize: '3.2rem', fontWeight: 900, color: T.text, letterSpacing: '-0.04em', lineHeight: 1 }}>$0</span>
             </div>
@@ -159,10 +169,9 @@ export default function PricingPage() {
               Forever free. Manual entry only — no bank connection.
             </div>
 
-            <a href="/onboarding" style={{ display: 'block', textAlign: 'center', padding: '13px 0', borderRadius: 12, border: `1.5px solid ${T.borderMed}`, color: T.text, fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', marginBottom: 28, transition: 'border-color 0.2s',
-            }}>
-              Get started free
-            </a>
+            <div style={{ display: 'block', textAlign: 'center', padding: '13px 0', borderRadius: 12, border: `1.5px solid ${T.border}`, color: T.muted, fontWeight: 700, fontSize: '0.95rem', marginBottom: 28, cursor: 'default' }}>
+              Coming soon
+            </div>
 
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 11 }}>
               {[
@@ -216,7 +225,7 @@ export default function PricingPage() {
             {/* Promo notice */}
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 8, background: 'rgba(46,211,198,0.12)', border: '1px solid rgba(46,211,198,0.3)', marginBottom: 10 }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: T.gold }}>
-                First 100,000 subscribers lock this price forever
+                Founding members lock in half off — guaranteed 24 months
               </span>
             </div>
 

@@ -9,31 +9,31 @@ import PhoneMockup from "./PhoneMockup";
 // ── Insight cards — reuses Hero's exact pattern ──────────────────────────────
 const insightCards = [
   {
-    pos: "top-[6%] -left-[45%] animate-float1",
+    pos: "top-[6%] -left-[28%] animate-float1",
     label: "Monthly Savings Found",
     value: "↑ +$347",
     valueClass: "text-green-400",
   },
   {
-    pos: "top-[22%] -right-[42%] animate-float2",
+    pos: "top-[22%] -right-[26%] animate-float2",
     label: "Retirement Goal",
     value: "73% Complete",
     valueClass: "text-gold",
   },
   {
-    pos: "top-[44%] -left-[48%] animate-float3 hidden lg:block",
+    pos: "top-[44%] -left-[30%] animate-float3 hidden lg:block",
     label: "Vacation Goal",
     value: "● On Track",
     valueClass: "text-accent",
   },
   {
-    pos: "top-[62%] -right-[38%] animate-float1-slow",
+    pos: "top-[62%] -right-[24%] animate-float1-slow",
     label: "Net Worth YTD",
     value: "+12.4%",
     valueClass: "text-green-400",
   },
   {
-    pos: "bottom-[8%] -left-[40%] animate-float2-fast",
+    pos: "bottom-[8%] -left-[26%] animate-float2-fast",
     label: "Active Subscriptions",
     value: "17 Tracked",
     valueClass: "text-gold",
@@ -56,11 +56,6 @@ const trustItems = [
     icon: "🛡️",
     title: "Your Data, Private",
     desc: "We never sell or share your financial data",
-  },
-  {
-    icon: "📊",
-    title: "Secure Aggregation",
-    desc: "Powered by Supabase + Plaid infrastructure",
   },
 ];
 
@@ -144,6 +139,72 @@ function FloatInput({
   );
 }
 
+// ── Trust footer — 4 encryption boxes + powered-by + disclaimer ───────────────
+function TrustFooter() {
+  return (
+    <>
+      {/* Label — matches Security.tsx eyebrow style */}
+      <div className="text-[0.72rem] font-bold tracking-[0.12em] uppercase text-muted text-center mb-4 flex justify-center items-center gap-2">
+        <span className="inline-block w-5 h-px bg-muted/40" />
+        Trusted Financial Infrastructure
+        <span className="inline-block w-5 h-px bg-muted/40" />
+      </div>
+
+      {/* Trust grid — same card style as Security.tsx */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 mb-5">
+        {trustItems.map((item) => (
+          <div
+            key={item.title}
+            className="bg-bg2 border border-glass-border rounded-[14px] p-3.5 flex items-start gap-2.5 hover:border-accent/30 transition-colors duration-300"
+          >
+            <div className="text-[1.1rem] mt-0.5 shrink-0">{item.icon}</div>
+            <div>
+              <div className="text-[0.78rem] font-bold text-text leading-tight mb-0.5">
+                {item.title}
+              </div>
+              <div className="text-[0.7rem] text-muted leading-[1.4]">
+                {item.desc}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Powered-by badges */}
+      <div className="flex items-center justify-center gap-3 pt-4 border-t border-glass-border">
+        <span className="text-[0.72rem] text-muted">Powered by</span>
+        {["Supabase Auth", "Plaid"].map((name) => (
+          <span
+            key={name}
+            className="flex items-center gap-1.5 bg-bg2 border border-glass-border rounded-md px-2.5 py-1"
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full animate-dot-pulse"
+              style={{ background: "#00C896" }}
+            />
+            <span className="text-[0.72rem] font-semibold text-muted">
+              {name}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      {/* Privacy note */}
+      <p className="text-center text-[0.72rem] text-muted leading-[1.6] mt-4 px-2">
+        By signing in you agree to our{" "}
+        <a href="/terms" className="text-accent/70 no-underline hover:underline">
+          Terms
+        </a>{" "}
+        &amp;{" "}
+        <a href="/landingpage/privacy" className="text-accent/70 no-underline hover:underline">
+          Privacy Policy
+        </a>
+        . Nautilus never sells or uses your financial data beyond delivering the service.
+      </p>
+    </>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SignIn() {
   const emailId = useId();
@@ -210,81 +271,83 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-bg grid grid-cols-1 lg:grid-cols-2">
+    <div className="min-h-screen bg-bg relative lg:flex lg:items-stretch">
 
-      {/* ═══════════════════════════════════════════════════════
-          LEFT — Brand experience (mirrors Hero layout exactly)
-      ═══════════════════════════════════════════════════════ */}
+      {/* Full-page background image — desktop only; mobile is left untouched */}
       <div
-        className="hidden lg:flex flex-col justify-start items-center px-[5vw] pt-8 pb-20 relative overflow-hidden"
+        className="hidden lg:block absolute inset-0 z-0 pointer-events-none"
         style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 70% 50%, rgba(11,45,137,0.35) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 20% 80%, rgba(77,163,255,0.08) 0%, transparent 60%), #07111F",
+          backgroundImage: "url('/Nautilus signin.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
-        {/* Grid overlay — same as Hero */}
-        <div className="absolute inset-0 pointer-events-none hero-grid-overlay" />
+        {/* subtle legibility overlay so headline + card stay readable over the art */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.20) 45%, rgba(7,17,31,0.45) 100%)",
+          }}
+        />
+      </div>
 
-        {/* Logo — pinned top-left */}
-        <a href="/" className="absolute top-6 left-[5vw] z-20 no-underline">
-          <LogoMark size={40}/>
-        </a>
+      {/* Grid overlay — full-page, desktop only */}
+      <div className="hidden lg:block absolute inset-0 pointer-events-none hero-grid-overlay z-0" />
 
-        <div className="relative z-10 flex flex-col items-start max-w-[520px] w-full gap-10 pt-20">
+      {/* Logo — pinned top-left of the page (desktop) */}
+      <a href="/" className="hidden lg:block absolute top-6 left-[5vw] z-20 no-underline">
+        <LogoMark size={40}/>
+      </a>
 
-          {/* Headline */}
+      {/* ═══════════════════════════════════════════════════════
+          HERO column — headline + trust, sized to its own text
+      ═══════════════════════════════════════════════════════ */}
+      <div className="hidden lg:flex flex-col justify-center shrink-0 pl-[5vw] pr-0 pt-8 pb-20 relative overflow-visible z-10">
+        <div className="flex flex-col items-start w-[clamp(440px,34vw,560px)] gap-8">
           <div>
-            <h1 className="font-display text-[clamp(2.2rem,3.5vw,3.2rem)] font-bold leading-[1.12] tracking-tight mb-4">
+            <h1 className="font-display text-[clamp(2.1rem,3.1vw,3.3rem)] font-bold leading-[1.12] tracking-tight mb-4 whitespace-nowrap">
               Your Financial Journey<br />
               <span className="text-gold">Continues Here.</span>
             </h1>
-            <p className="text-muted text-[1.05rem] leading-[1.7] max-w-[440px]">
+            <p className="text-muted text-[1.02rem] leading-[1.7]">
               Everything you need to understand your money, from spending and subscriptions to retirement forecasts and your Nautilus Score is waiting for you.
             </p>
           </div>
 
-          {/* Phone scene */}
-          <div className="relative flex items-center justify-center w-full min-h-[540px]">
-            {/* Glow behind phone */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                width: 280,
-                height: 480,
-                background:
-                  "radial-gradient(ellipse, rgba(11,45,137,0.6) 0%, rgba(77,163,255,0.15) 40%, transparent 70%)",
-                filter: "blur(30px)",
-              }}
-            />
-
-            {/* Phone + cards together so cards position relative to phone */}
-            <div className="relative" style={{ width: 260, height: 580 }}>
-              <PhoneMockup />
-              {insightCards.map((c, i) => (
-                <div
-                  key={i}
-                  className={`absolute glass rounded-xl px-3.5 py-2.5 whitespace-nowrap shadow-glass ${c.pos}`}
-                  style={{ zIndex: 20 }}
-                >
-                  <div className="text-[0.65rem] text-muted tracking-wide">{c.label}</div>
-                  <div className={`text-[0.88rem] font-bold ${c.valueClass}`}>{c.value}</div>
-                </div>
-              ))}
-            </div>
+          {/* 3 encryption boxes + disclaimer, under the hero statement */}
+          <div className="w-full">
+            <TrustFooter />
           </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          PHONE column — centered in the open middle space
+      ═══════════════════════════════════════════════════════ */}
+      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-visible z-10 min-w-0 pl-16">
+        {/* Glow behind phone */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            width: 280,
+            height: 480,
+            background:
+              "radial-gradient(ellipse, rgba(11,45,137,0.6) 0%, rgba(77,163,255,0.15) 40%, transparent 70%)",
+            filter: "blur(30px)",
+          }}
+        />
+
+        {/* Phone — real mobile screenshot inside the device frame */}
+        <div className="relative" style={{ width: 260, height: 580 }}>
+          <PhoneMockup />
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════
           RIGHT — Auth card
       ═══════════════════════════════════════════════════════ */}
-      <div
-        className="flex flex-col justify-start items-center px-6 sm:px-12 pt-8 pb-16 relative"
-        style={{
-          background: "rgba(13,28,48,0.5)",
-          borderLeft: "1px solid rgba(77,163,255,0.08)",
-        }}
-      >
+      <div className="flex flex-col justify-start lg:justify-center items-center px-6 sm:px-12 pt-8 pb-16 relative z-10 bg-[rgba(13,28,48,0.5)] lg:bg-transparent lg:w-[440px] 2xl:w-1/2 lg:shrink-0">
         {/* Top edge light streak */}
         <div
           className="absolute top-0 left-1/4 right-1/4 h-px pointer-events-none"
@@ -303,7 +366,7 @@ export default function SignIn() {
         <div
           className="glass rounded-card w-full max-w-[420px] px-8 sm:px-10 pt-3 pb-8 sm:pb-10 relative overflow-hidden"
           style={{
-            background: "rgba(13,28,48,0.72)",
+            background: "rgba(13,28,48,0.88)",
           }}
         >
           {/* Card top shimmer — same pattern as feature-card */}
@@ -487,67 +550,9 @@ export default function SignIn() {
           </p>
         </div>
 
-        {/* ── Trust footer ── */}
-        <div className="w-full max-w-[420px] mt-7">
-
-          {/* Label — matches Security.tsx eyebrow style */}
-          <div className="text-[0.72rem] font-bold tracking-[0.12em] uppercase text-muted text-center mb-4 flex justify-center items-center gap-2">
-            <span className="inline-block w-5 h-px bg-muted/40" />
-            Trusted Financial Infrastructure
-            <span className="inline-block w-5 h-px bg-muted/40" />
-          </div>
-
-          {/* Trust grid — same card style as Security.tsx */}
-          <div className="grid grid-cols-2 gap-2.5 mb-5">
-            {trustItems.map((item) => (
-              <div
-                key={item.title}
-                className="bg-bg2 border border-glass-border rounded-[14px] p-3.5 flex items-start gap-2.5 hover:border-accent/30 transition-colors duration-300"
-              >
-                <div className="text-[1.1rem] mt-0.5 shrink-0">{item.icon}</div>
-                <div>
-                  <div className="text-[0.78rem] font-bold text-text leading-tight mb-0.5">
-                    {item.title}
-                  </div>
-                  <div className="text-[0.7rem] text-muted leading-[1.4]">
-                    {item.desc}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Powered-by badges */}
-          <div className="flex items-center justify-center gap-3 pt-4 border-t border-glass-border">
-            <span className="text-[0.72rem] text-muted">Powered by</span>
-            {["Supabase Auth", "Plaid"].map((name) => (
-              <span
-                key={name}
-                className="flex items-center gap-1.5 bg-bg2 border border-glass-border rounded-md px-2.5 py-1"
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full animate-dot-pulse"
-                  style={{ background: "#00C896" }}
-                />
-                <span className="text-[0.72rem] font-semibold text-muted">
-                  {name}
-                </span>
-              </span>
-            ))}
-          </div>
-
-          {/* Privacy note */}
-          <p className="text-center text-[0.72rem] text-muted leading-[1.6] mt-4 px-2">
-            By signing in you agree to our{" "}
-            <a href="/terms" className="text-accent/70 no-underline hover:underline">
-              Terms
-            </a>{" "}
-            &amp;{" "}
-            <a href="/landingpage/privacy" className="text-accent/70 no-underline hover:underline">
-              Privacy Policy
-            </a>
-            . Nautilus never sells or uses your financial data beyond delivering the service.
-          </p>
+        {/* ── Trust footer — mobile only; on desktop it lives under the hero ── */}
+        <div className="lg:hidden w-full max-w-[420px] mt-7">
+          <TrustFooter />
         </div>
       </div>
     </div>

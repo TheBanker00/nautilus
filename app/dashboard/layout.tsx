@@ -435,6 +435,327 @@ function ThemeToggle({ isCollapsed }: { isCollapsed: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   MOBILE BOTTOM NAV
+───────────────────────────────────────────────────────────── */
+const MOBILE_TABS = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: <I.Dashboard />,
+    sub: [
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Score',     href: '/dashboard/health' },
+      { label: 'AI',        href: '/dashboard/ai-insights' },
+    ],
+  },
+  {
+    id: 'transactions',
+    label: 'Transactions',
+    icon: <I.CashFlow />,
+    sub: [
+      { label: 'Cash Flow', href: '/dashboard/cashflow' },
+      { label: 'Income',    href: '/dashboard/income' },
+      { label: 'Expenses',  href: '/dashboard/expenses' },
+    ],
+  },
+  {
+    id: 'accounts',
+    label: 'Accounts',
+    icon: <I.NetWorth />,
+    sub: [
+      { label: 'Summary',     href: '/dashboard/net-worth' },
+      { label: 'Assets',      href: '/dashboard/net-worth/assets' },
+      { label: 'Liabilities', href: '/dashboard/net-worth/liabilities' },
+    ],
+  },
+  {
+    id: 'recurring',
+    label: 'Recurring',
+    icon: <I.Recurring />,
+    href: '/dashboard/recurring',
+  },
+  {
+    id: 'more',
+    label: 'More',
+    icon: (
+      <svg width={18} height={18} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="4" cy="10" r="1.5" fill="currentColor" stroke="none" />
+        <circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none" />
+        <circle cx="16" cy="10" r="1.5" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+    more: [
+      { label: 'Budget',       href: '/dashboard/budget',     icon: <I.Budget /> },
+      { label: 'Goals',        href: '/dashboard/goals',      icon: <I.Goals /> },
+      { label: 'Forecast',     href: '/dashboard/forecast',   icon: <I.Forecast /> },
+      { label: 'Debt Planner', href: '/dashboard/debt',       icon: <I.DebtPlanner /> },
+      { label: 'Retirement',   href: '/dashboard/retirement', icon: <I.Retirement /> },
+    ],
+  },
+];
+
+/* Fixed top header — logo left, settings + add account right */
+function MobileHeader({ onAddAccount }: { onAddAccount: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 250,
+      height: 56,
+      background: N.bg,
+      borderBottom: `1px solid ${N.border}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 16px',
+    }}>
+      <img src="/nautilus logo 1.png" alt="Nautilus" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Link href="/dashboard/settings" style={{
+          width: 32, height: 32, borderRadius: 8,
+          background: 'rgba(255,255,255,0.06)', border: `1px solid ${N.border}`,
+          color: N.muted, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          textDecoration: 'none',
+        }}>
+          <I.Settings />
+        </Link>
+        <button onClick={onAddAccount} style={{
+          width: 32, height: 32, borderRadius: 8,
+          background: 'rgba(77,163,255,0.15)', border: `1px solid ${N.activeBorder}`,
+          color: N.activeBorder, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', fontSize: 20, lineHeight: 1,
+        }}>+</button>
+      </div>
+    </div>
+  );
+}
+
+function MobileNav({
+  pathname,
+  onAddAccount,
+}: {
+  pathname: string;
+  onAddAccount: () => void;
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const router = useRouter();
+
+  const matchHref = (subHref: string) => {
+    if (pathname === subHref) return true;
+    if (subHref !== '/dashboard' && pathname.startsWith(subHref + '/')) return true;
+    return false;
+  };
+  const getActiveTabId = () => {
+    for (const tab of MOBILE_TABS) {
+      if ('sub' in tab && (tab as any).sub.some((s: any) => matchHref(s.href))) return tab.id;
+      if ('href' in tab && matchHref((tab as any).href)) return tab.id;
+    }
+    return null;
+  };
+  const currentTabId = getActiveTabId();
+
+  const handleTabPress = (tab: any) => {
+    if (tab.id === 'more') { setMoreOpen(!moreOpen); return; }
+    setMoreOpen(false);
+    if ('sub' in tab) router.push(tab.sub[0].href);
+    else if ('href' in tab) router.push(tab.href);
+  };
+
+  return (
+    <>
+      {/* More slide-up drawer */}
+      {moreOpen && (
+        <div onClick={() => setMoreOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.5)' }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'absolute', bottom: 68, left: 0, right: 0,
+            background: N.bg, borderTop: `1px solid ${N.border}`,
+            borderRadius: '20px 20px 0 0', padding: '20px 16px 16px',
+          }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px' }} />
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase' as const, color: N.section, marginBottom: 10, paddingLeft: 4 }}>Tools</div>
+            {(MOBILE_TABS.find(t => t.id === 'more') as any).more.map((item: { label: string; href: string; icon: React.ReactNode }) => {
+              const active = pathname === item.href;
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '13px 12px', borderRadius: 10, textDecoration: 'none',
+                  color: active ? '#fff' : N.text,
+                  background: active ? N.activeBg : 'transparent',
+                  borderLeft: active ? `3px solid ${N.activeBorder}` : '3px solid transparent',
+                  fontSize: 14, fontWeight: active ? 600 : 400, marginBottom: 2,
+                }}>
+                  <span style={{ opacity: active ? 1 : 0.65 }}>{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom tab bar */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+        background: N.bg, borderTop: `1px solid ${N.border}`,
+        display: 'flex', height: 68,
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}>
+        {MOBILE_TABS.map(tab => {
+          const isActive = tab.id === 'more' ? moreOpen : tab.id === currentTabId;
+          return (
+            <button key={tab.id} onClick={() => handleTabPress(tab)} style={{
+              flex: 1, display: 'flex', flexDirection: 'column' as const,
+              alignItems: 'center', justifyContent: 'center', gap: 4,
+              background: 'transparent', border: 'none',
+              color: isActive ? N.activeBorder : N.text,
+              cursor: 'pointer', fontSize: 10, fontWeight: isActive ? 700 : 400,
+              borderTop: isActive ? `2px solid ${N.activeBorder}` : '2px solid transparent',
+              transition: 'all 0.15s ease',
+            }}>
+              <span style={{ opacity: isActive ? 1 : 0.6 }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* Sub-tab strip — rendered inline at top of page content, scrolls with page */
+function MobileSubTabs({ pathname }: { pathname: string }) {
+  const touchStartX = React.useRef<number | null>(null);
+  const router = useRouter();
+
+  // Match a sub href — exact match only (all sub-tabs are leaf routes)
+  const matchesHref = (subHref: string) => pathname === subHref;
+
+  const getActiveTabId = () => {
+    for (const tab of MOBILE_TABS) {
+      if ('sub' in tab && (tab as any).sub.some((s: any) => matchesHref(s.href))) return tab.id;
+    }
+    return null;
+  };
+  const currentTabId = getActiveTabId();
+  const currentTabData = MOBILE_TABS.find(t => t.id === currentTabId);
+  const subs: { label: string; href: string }[] = (currentTabData && 'sub' in currentTabData) ? (currentTabData as any).sub : [];
+
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || subs.length < 2) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) < 50) return;
+    const idx = subs.findIndex((s: any) => matchesHref(s.href));
+    if (diff > 0 && idx < subs.length - 1) router.push(subs[idx + 1].href);
+    if (diff < 0 && idx > 0) router.push(subs[idx - 1].href);
+    touchStartX.current = null;
+  };
+
+  if (subs.length === 0) return null;
+
+  return (
+    /* Full-bleed strip flush under the fixed header — same background so it
+       reads as an extension of it, but scrolls away with the page content.
+       Page padding is 72px top / 16px sides; negative margins bridge the gap. */
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        display: 'flex', width: 'auto',
+        margin: '-16px -16px 16px',
+        background: N.bg,
+        borderBottom: `1px solid ${N.border}`,
+      }}
+    >
+      {subs.map((s: { label: string; href: string }) => {
+        const active = matchesHref(s.href);
+        return (
+          <Link key={s.href} href={s.href} style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '10px 4px 9px',
+            fontSize: 13, fontWeight: active ? 700 : 500,
+            color: active ? '#ffffff' : 'rgba(255,255,255,0.45)',
+            background: 'transparent',
+            borderBottom: active ? '2.5px solid #ffffff' : '2.5px solid transparent',
+            textDecoration: 'none',
+            transition: 'color 0.15s ease, border-color 0.15s ease',
+            whiteSpace: 'nowrap',
+          }}>
+            {s.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE SWIPE NAVIGATION — swipe anywhere on the page content to
+   move between the current tab's sub-pages (Overview, Transactions,
+   Accounts). Ignores gestures that start on horizontally scrollable
+   elements (month strip, chips, carousels), SVGs (scrub charts),
+   and range sliders so those interactions still work.
+───────────────────────────────────────────────────────────── */
+function swipeTargetIsInteractive(target: EventTarget | null): boolean {
+  let el = target as HTMLElement | null;
+  while (el && el !== document.body) {
+    const tag = el.tagName;
+    if (tag === 'svg' || tag === 'SVG' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true;
+    try {
+      const style = window.getComputedStyle(el);
+      if ((style.overflowX === 'auto' || style.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 4) return true;
+    } catch {}
+    el = el.parentElement;
+  }
+  return false;
+}
+
+function MobileSwipeArea({ pathname, children }: { pathname: string; children: React.ReactNode }) {
+  const router = useRouter();
+  const start = React.useRef<{ x: number; y: number; skip: boolean } | null>(null);
+
+  const matchesHref = (subHref: string) => {
+    if (pathname === subHref) return true;
+    if (subHref !== '/dashboard' && pathname.startsWith(subHref + '/')) return true;
+    return false;
+  };
+
+  const subs: { label: string; href: string }[] = React.useMemo(() => {
+    for (const tab of MOBILE_TABS) {
+      if ('sub' in tab && (tab as any).sub.some((s: any) => matchesHref(s.href))) return (tab as any).sub;
+    }
+    return [];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    // only act on mobile widths; desktop keeps native behavior
+    if (window.innerWidth > 768 || subs.length < 2) { start.current = null; return; }
+    start.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      skip: swipeTargetIsInteractive(e.target),
+    };
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = start.current;
+    start.current = null;
+    if (!s || s.skip || subs.length < 2) return;
+    const dx = e.changedTouches[0].clientX - s.x;
+    const dy = e.changedTouches[0].clientY - s.y;
+    // decisive horizontal swipe only: long enough and much more horizontal than vertical
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2.5) return;
+    const idx = subs.findIndex(sub => matchesHref(sub.href));
+    if (idx === -1) return;
+    if (dx < 0 && idx < subs.length - 1) router.push(subs[idx + 1].href);   // swipe left → next
+    if (dx > 0 && idx > 0)              router.push(subs[idx - 1].href);    // swipe right → previous
+  };
+
+  return (
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      {children}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    INNER LAYOUT (uses theme context)
 ───────────────────────────────────────────────────────────── */
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
@@ -454,8 +775,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           <div style={{ display: 'flex', background: T.pageBg, minHeight: '100vh', transition: 'background 0.2s ease' }}>
             {addAccountOpen && <AddAccountModal onClose={() => setAddAccountOpen(false)} />}
 
-            {/* ─────── SIDEBAR ─────── */}
-            <div style={{
+            {/* ─────── MOBILE — header + bottom nav ─────── */}
+            <div className="mobile-nav-shell">
+              <MobileHeader onAddAccount={() => setAddAccountOpen(true)} />
+              <MobileNav pathname={pathname} onAddAccount={() => setAddAccountOpen(true)} />
+            </div>
+
+            {/* ─────── SIDEBAR — desktop only ─────── */}
+            <div className="desktop-sidebar" style={{
               width:           sidebarWidth,
               background:      N.bg,
               position:        'fixed',
@@ -656,7 +983,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             {/* ─────── END SIDEBAR ─────── */}
 
             {/* ─────── MAIN CONTENT ─────── */}
-            <div className="dashboard-scroll" style={{
+            <div className="dashboard-scroll dashboard-main" style={{
               flex:       1,
               marginLeft: sidebarWidth,
               transition: 'margin-left 0.22s ease, background 0.2s ease',
@@ -666,8 +993,28 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               color:      T.text,
               padding:    '32px 36px',
             }}>
-              {children}
+              <MobileSwipeArea pathname={pathname}>
+                <div className="mobile-subtabs">
+                  <MobileSubTabs pathname={pathname} />
+                </div>
+                {children}
+              </MobileSwipeArea>
             </div>
+
+            <style>{`
+              @media (max-width: 768px) {
+                .desktop-sidebar { display: none !important; }
+                .mobile-nav-shell { display: block; }
+                .dashboard-main {
+                  margin-left: 0 !important;
+                  padding: 72px 16px 84px !important;
+                }
+              }
+              @media (min-width: 769px) {
+                .mobile-nav-shell { display: none !important; }
+                .mobile-subtabs { display: none !important; }
+              }
+            `}</style>
 
           </div>
   );

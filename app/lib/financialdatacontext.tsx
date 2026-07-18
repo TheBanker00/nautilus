@@ -41,7 +41,7 @@ type AssetItem = {
   value?: number;
 };
 
-type Snapshot = {
+export type Snapshot = {
   bankAccounts: AssetItem[];
   investmentAccounts: AssetItem[];
   retirementAccounts: AssetItem[];
@@ -244,7 +244,7 @@ type ContextType = {
 /* -----------------------------------
    CONTEXT
 ----------------------------------- */
-const FinancialContext = createContext<ContextType | undefined>(undefined);
+export const FinancialContext = createContext<ContextType | undefined>(undefined);
 
 /* -----------------------------------
    PROVIDER

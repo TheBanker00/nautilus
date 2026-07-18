@@ -104,6 +104,15 @@ export default function SecurityPage() {
     <main style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
       <Navbar />
 
+      {/* ── TOP: writing + partner cards, sharing one background ── */}
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Background — security art, covers both sections (contained via overflow-hidden + cover) */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: "url('/security.png')", backgroundSize: 'cover', backgroundPosition: 'center', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(7,17,31,0.6) 0%, rgba(7,17,31,0.4) 50%, rgba(7,17,31,0.7) 100%)' }} />
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+
       {/* ── HERO ── */}
       <section style={{ paddingTop: 120, paddingBottom: 72, paddingLeft: '5vw', paddingRight: '5vw', textAlign: 'center', maxWidth: 800, margin: '0 auto' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 18px', borderRadius: 100, border: `1px solid rgba(46,211,198,0.25)`, background: 'rgba(46,211,198,0.08)', marginBottom: 24 }}>
@@ -159,6 +168,9 @@ export default function SecurityPage() {
           ))}
         </div>
       </section>
+
+        </div>
+      </div>
 
       {/* ── ARCHITECTURE PRINCIPLES ── */}
       <section style={{ padding: '72px 5vw', background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>

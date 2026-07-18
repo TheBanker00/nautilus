@@ -349,15 +349,29 @@ export default function SignUp() {
   );
 
   return (
-    <div className="min-h-screen bg-bg grid grid-cols-1 lg:grid-cols-2">
+    <div className="min-h-screen bg-bg grid grid-cols-1 lg:grid-cols-2 relative">
 
-      {/* LEFT — Brand panel */}
+      {/* Full-page background image — desktop only; mobile is left untouched */}
       <div
-        className="hidden lg:flex flex-col justify-start items-center px-[5vw] pt-8 pb-20 relative overflow-hidden"
+        className="hidden lg:block absolute inset-0 z-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 80% 60% at 70% 50%, rgba(11,45,137,0.35) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 20% 80%, rgba(77,163,255,0.08) 0%, transparent 60%), #07111F",
+          backgroundImage: "url('/Nautilus signin.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
+        {/* subtle legibility overlay so headline + card stay readable over the art */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(7,17,31,0.55) 0%, rgba(7,17,31,0.20) 45%, rgba(7,17,31,0.45) 100%)",
+          }}
+        />
+      </div>
+
+      {/* LEFT — Brand panel */}
+      <div className="hidden lg:flex flex-col justify-start items-center px-[5vw] pt-8 pb-20 relative overflow-hidden z-10">
         <div className="absolute inset-0 pointer-events-none hero-grid-overlay" />
 
         <a href="/" className="absolute top-6 left-[5vw] z-20 no-underline">
@@ -380,10 +394,7 @@ export default function SignUp() {
       </div>
 
       {/* RIGHT — Auth card */}
-      <div
-        className="flex flex-col justify-start items-center px-6 sm:px-12 pt-8 pb-16 relative"
-        style={{ background: "rgba(13,28,48,0.5)", borderLeft: "1px solid rgba(77,163,255,0.08)" }}
-      >
+      <div className="flex flex-col justify-start items-center px-6 sm:px-12 pt-8 pb-16 relative z-10 bg-[rgba(13,28,48,0.5)] lg:bg-transparent">
         <div className="absolute top-0 left-1/4 right-1/4 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent, rgba(77,163,255,0.5), transparent)" }} />
 
         {/* Mobile-only logo */}
@@ -391,7 +402,7 @@ export default function SignUp() {
           <LogoMark />
         </div>
 
-        <div className="glass rounded-card w-full max-w-[420px] px-8 sm:px-10 pt-3 pb-8 sm:pb-10 relative overflow-hidden" style={{ background: "rgba(13,28,48,0.72)" }}>
+        <div className="glass rounded-card w-full max-w-[420px] px-8 sm:px-10 pt-3 pb-8 sm:pb-10 relative overflow-hidden" style={{ background: "rgba(13,28,48,0.88)" }}>
           <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(77,163,255,0.5), transparent)" }} />
 
           {/* Logo */}

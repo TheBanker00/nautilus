@@ -70,9 +70,8 @@ export default function Footer() {
 
       <div className="border-t border-glass-border pt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <p className="text-[0.8rem] text-muted max-w-[560px]">
-          © 2026 Nautilus Money, Inc. All rights reserved. Not a registered
-          investment advisor. Nautilus Money is not a bank. FDIC insurance applies
-          to eligible partner accounts only.
+          © 2026 Nautilus Money All rights reserved. Not a registered
+          investment advisor. Nautilus Money is not a bank.
         </p>
         <div className="flex gap-6">
           {bottomLinks.map((l) => (

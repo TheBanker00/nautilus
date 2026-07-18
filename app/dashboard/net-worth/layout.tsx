@@ -8,6 +8,18 @@ import FilterBar from '../../components/finance/FilterBar';
 import MonthPicker from '../../components/finance/MonthPicker';
 import { useDashboardTheme } from '../../lib/dashboardthemecontext';
 
+function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
 const C = {
   gold:   '#2ED3C6',
   text:   '#F0F4FF',
@@ -20,6 +32,7 @@ const C = {
 export default function NetWorthLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { T } = useDashboardTheme();
+  const isMobile = useMobile();
 
   const {
     selectedMonthKey,
@@ -28,6 +41,16 @@ export default function NetWorthLayout({ children }: { children: React.ReactNode
     setPeriodType,
     availableMonths,
   } = useFinancialData();
+
+  /* ── MOBILE — sub-tabs live in the dashboard header; the month strip now
+     lives inside each page's hero card, so this layout just passes children through. ── */
+  if (isMobile) {
+    return (
+      <div style={{ color: T.text, fontFamily: 'var(--font-body)' }}>
+        {children}
+      </div>
+    );
+  }
 
   const tabs = [
     { label: 'Summary',     href: '/dashboard/net-worth' },
